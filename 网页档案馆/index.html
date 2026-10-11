@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拾光档案 · 大学生成长档案馆</title>
+<style>
+  :root {
+    --bg: #F5F4EF;
+    --paper: #FFFFFF;
+    --ink: #2B2B28;
+    --ink-soft: #6E6E66;
+    --line: #E8E6DE;
+    --green: #1E4D3B;
+    --green-soft: #E7F0EB;
+    --gold: #C9A227;
+    --gold-soft: #F7F1DE;
+    --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+
+  header { background: var(--green); color: #F2F5F0; padding: 32px 24px 28px; }
+  .header-inner { max-width: 1080px; margin: 0 auto; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 14px; font-size: 26px; font-weight: 700; letter-spacing: 2px; margin-right: auto; }
+  .brand .seal { width: 44px; height: 44px; border-radius: 10px; background: var(--gold); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 800; }
+  .btn-resume {
+    background: var(--gold); color: var(--green); border: none; border-radius: 999px;
+    padding: 10px 22px; font-size: 15px; font-weight: 700; cursor: pointer; text-decoration: none;
+  }
+  .btn-resume:hover { opacity: .9; }
+  .btn-upload {
+    background: transparent; color: #F2F0E4; border: 1.5px solid var(--gold); border-radius: 999px;
+    padding: 9px 20px; font-size: 14px; font-weight: 700; cursor: pointer;
+  }
+  .btn-upload:hover { background: rgba(255,255,255,.12); }
+  .btn-upload:disabled { opacity: .55; cursor: wait; }
+  .btn-nav { background: transparent; color: #F2F0E4; border: 1.5px solid var(--gold); border-radius: 999px; padding: 9px 20px; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; }
+  .btn-nav:hover { background: rgba(255,255,255,.12); }
+  .slogan { margin-top: 10px; font-size: 14px; color: #BBD3C6; letter-spacing: 1px; }
+  .header-inner .slogan { flex-basis: 100%; margin-top: 4px; }
+
+  /* 身份卡 */
+  .identity-wrap { max-width: 1080px; margin: -14px auto 0; padding: 0 24px; }
+  .identity {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  }
+  .avatar {
+    width: 56px; height: 56px; flex: none; border-radius: 50%;
+    background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700;
+  }
+  .identity .info { display: flex; flex-direction: column; gap: 4px; }
+  .identity .name { font-size: 17px; font-weight: 700; }
+  .identity .meta { font-size: 13px; color: var(--ink-soft); }
+  .identity .badge {
+    margin-left: auto; font-size: 12px; color: var(--green); background: var(--green-soft);
+    border-radius: 999px; padding: 5px 12px; font-weight: 600;
+  }
+
+  .stats { max-width: 1080px; margin: 16px auto 0; padding: 0 24px; display: flex; gap: 16px; flex-wrap: wrap; }
+  .stat { flex: 1; min-width: 150px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+  .stat .num { font-size: 24px; font-weight: 700; color: var(--green); }
+  .stat .label { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+  .stat.privacy .num { color: var(--gold); }
+
+  .privacy-bar { max-width: 1080px; margin: 16px auto 0; padding: 0 24px; }
+  .privacy-inner { background: var(--gold-soft); border: 1px solid #E7D9A8; border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: #7A6520; display: flex; align-items: center; gap: 10px; }
+  .shield { width: 20px; height: 20px; flex: none; background: var(--gold); border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; }
+
+  /* 首次来访演示数据横幅 */
+  .demo-bar { max-width: 1080px; margin: 12px auto 0; padding: 0 24px; }
+  .demo-inner { background: var(--green-soft); border: 1px solid #BFD8CB; border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: var(--green); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .demo-flag { background: var(--green); color: #fff; border-radius: 6px; padding: 2px 9px; font-size: 12px; font-weight: 700; flex: none; }
+  .demo-btn { margin-left: auto; border: none; background: var(--green); color: #fff; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; flex: none; }
+  .demo-btn:hover { opacity: .9; }
+
+  .toolbar { max-width: 1080px; margin: 20px auto 0; padding: 0 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .chip { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 16px; font-size: 13px; cursor: pointer; color: var(--ink-soft); transition: all .15s; }
+  .chip:hover { border-color: var(--green); color: var(--green); }
+  .chip.active { background: var(--green); border-color: var(--green); color: #fff; }
+  .chip.add { background: var(--gold); border-color: var(--gold); color: var(--green); font-weight: 700; }
+  .view-toggle { margin-left: auto; display: flex; gap: 6px; }
+
+  .wall { max-width: 1080px; margin: 20px auto 60px; padding: 0 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.04); display: flex; flex-direction: column; gap: 10px; transition: transform .15s, box-shadow .15s; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.08); }
+  .card .row-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card h3 { font-size: 16px; font-weight: 700; }
+  .tag { flex: none; font-size: 12px; border-radius: 6px; padding: 3px 8px; font-weight: 600; }
+  .card .org { font-size: 13px; color: var(--ink-soft); }
+  .card .date { font-size: 12px; color: var(--ink-soft); }
+  .card .summary { font-size: 14px; }
+  .hl { display: flex; flex-wrap: wrap; gap: 6px; }
+  .hl span { font-size: 12px; color: var(--green); background: var(--green-soft); border-radius: 6px; padding: 3px 8px; }
+  .conf { font-size: 12px; color: var(--ink-soft); border-top: 1px dashed var(--line); padding-top: 8px; }
+  .conf b { color: var(--gold); }
+  .card .actions { display: flex; gap: 8px; }
+  .card .actions button { border: 1px solid var(--line); background: var(--paper); border-radius: 6px; padding: 3px 10px; font-size: 12px; cursor: pointer; color: var(--ink-soft); }
+  .card .actions button:hover { color: var(--green); border-color: var(--green); }
+  .card .actions button.del:hover { color: #B23A2E; border-color: #B23A2E; }
+  .card-photo { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .photo-bar { width: 100%; display: flex; justify-content: space-between; align-items: center; border: none; background: var(--bg); padding: 8px 12px; font-size: 12px; color: var(--ink-soft); cursor: pointer; font-family: inherit; }
+  .photo-bar:hover { color: var(--green); }
+  .photo-wrap { display: none; }
+  .card-photo.open .photo-wrap { display: block; }
+  .photo-wrap img { width: 100%; max-height: 180px; object-fit: cover; display: block; }
+  .btn-del-card { background: #F3E5E2; color: #B23A2E; border: 1px solid #E3C6BC; border-radius: 9px; padding: 10px 16px; font-size: 14px; cursor: pointer; flex: none; }
+
+  .cat-荣誉奖项 { background: #F7F1DE; color: #8A6D1B; }
+  .cat-志愿公益 { background: #E7F0EB; color: #1E4D3B; }
+  .cat-技能证书 { background: #EEE6F6; color: #6B3FA0; }
+  .cat-实习实践 { background: #E3EDFB; color: #2F6FED; }
+  .cat-项目经历 { background: #FDEBE2; color: #C05A2E; }
+  .cat-组织经历 { background: #FAE8F0; color: #B23A74; }
+
+  .timeline { display: none; max-width: 1080px; margin: 20px auto 60px; padding: 0 24px; }
+  .tl-item { position: relative; padding: 0 0 28px 32px; border-left: 2px solid var(--line); margin-left: 8px; }
+  .tl-item::before { content: ""; position: absolute; left: -7px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); border: 2px solid var(--paper); box-shadow: 0 0 0 2px var(--line); }
+  .tl-item .tl-date { font-size: 13px; font-weight: 700; color: var(--green); }
+  .tl-item .tl-title { font-size: 15px; font-weight: 700; margin-top: 2px; }
+  .tl-item .tl-org { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+  /* 编辑表单 */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(20,20,20,.45); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.show { display: flex; }
+  .form-card { background: var(--paper); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; }
+  .form-card h2 { font-size: 17px; margin-bottom: 16px; }
+  .form-card label { display: block; font-size: 13px; color: var(--ink-soft); margin: 10px 0 4px; }
+  .form-card input, .form-card select, .form-card textarea {
+    width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+    font-size: 14px; font-family: inherit; background: var(--bg); color: var(--ink);
+  }
+  .form-card .btn-row { display: flex; gap: 10px; margin-top: 18px; }
+  .form-card .btn-row button { flex: 1; border: none; border-radius: 8px; padding: 10px; font-size: 14px; cursor: pointer; }
+  .btn-save { background: var(--green); color: #fff; font-weight: 600; }
+  .btn-cancel { background: var(--surface-muted, #EFEFF2); color: var(--ink); border: 1px solid var(--line); }
+
+  footer { max-width: 1080px; margin: 0 auto; padding: 24px; text-align: center; font-size: 12px; color: var(--ink-soft); border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand"><span class="seal">拾</span><span>拾光档案 · 大学生成长档案馆</span></div>
+    <a class="btn-nav" href="profile.html">个人中心</a>
+    <button class="btn-nav" data-feedback style="font:inherit">问题反馈</button>
+    <button class="btn-upload" id="btn-upload" title="上传证书/成绩单/聘书等照片，xParse 自动识别并脱敏归档">＋ 上传证书照片 · 自动识别</button>
+    <a class="btn-resume" href="resume.html">生成简历 →</a>
+    <div class="slogan">把散落在抽屉里的每一份证明，酿成履历的底气 —— powered by TextIn xParse</div>
+  </div>
+</header>
+
+<div class="identity-wrap">
+  <div class="identity">
+    <div class="avatar" id="id-avatar">王</div>
+    <div class="info">
+      <div class="name" id="id-name">王小明</div>
+      <div class="meta" id="id-meta1">河北金融学院 · 人工智能专业 · 2024级</div>
+      <div class="meta" id="id-meta2">学号 2024****12（已脱敏） · 可在个人中心更新</div>
+    </div>
+    <div class="badge">已人工核对 · 身份信息来源于学生证 xParse 解析</div>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="num" id="stat-cards">0</div><div class="label">已归档经历</div></div>
+  <div class="stat"><div class="num" id="stat-cats">0</div><div class="label">覆盖分类</div></div>
+  <div class="stat privacy"><div class="num" id="stat-mask">2</div><div class="label">敏感信息已拦截打码</div></div>
+</div>
+
+<div class="privacy-bar">
+  <div class="privacy-inner">
+    <span class="shield">护</span>
+    隐私守护已开启：系统在解析环节自动检测并脱敏身份证号、手机号等敏感信息，学号等身份字段展示时同步打码，拦截记录可追溯。
+  </div>
+</div>
+
+<div class="demo-bar" id="demo-bar" style="display:none">
+  <div class="demo-inner">
+    <span class="demo-flag">示例</span>
+    <span>这里是 <b>6 张演示卡片</b>，帮你快速了解档案墙的效果。清空后上传第一张证书，就能开始建立你自己的成长档案。</span>
+    <button class="demo-btn" id="btn-demo-clear" type="button">清空演示数据，建立我的档案 →</button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="chip active" data-cat="全部">全部</button>
+  <button class="chip" data-cat="荣誉奖项">荣誉奖项</button>
+  <button class="chip" data-cat="志愿公益">志愿公益</button>
+  <button class="chip" data-cat="技能证书">技能证书</button>
+  <button class="chip" data-cat="实习实践">实习实践</button>
+  <button class="chip" data-cat="项目经历">项目经历</button>
+  <button class="chip" data-cat="组织经历">组织经历</button>
+  <button class="chip add" id="btn-add">＋ 新增经历</button>
+  <div class="view-toggle">
+    <button class="chip active" id="btn-wall">卡片墙</button>
+    <button class="chip" id="btn-tl">时间轴</button>
+  </div>
+</div>
+
+<div class="wall" id="wall"></div>
+<div class="timeline" id="timeline"></div>
+
+<div class="overlay" id="overlay">
+  <div class="form-card">
+    <h2 id="form-title">编辑经历</h2>
+    <label>标题</label><input id="f-title" placeholder="如：优秀志愿者">
+    <label>类型</label>
+    <select id="f-type">
+      <option>荣誉证书</option><option>获奖证书</option><option>成绩证明</option>
+      <option>服务证书</option><option>聘书</option><option>其他</option>
+    </select>
+    <label>分类（可自主修改）</label>
+    <select id="f-cat">
+      <option>荣誉奖项</option><option>实习实践</option><option>项目经历</option>
+      <option>志愿公益</option><option>技能证书</option><option>组织经历</option>
+    </select>
+    <label>颁发单位</label><input id="f-org" placeholder="如：河北金融学院团委">
+    <label>时间（可留空，格式如 2025-06）</label><input id="f-date" placeholder="如：2025-06">
+    <label>摘要</label><textarea id="f-summary" rows="3" placeholder="经历的简要描述"></textarea>
+    <label>亮点（用逗号分隔）</label><input id="f-hl" placeholder="如：校级表彰, 志愿服务">
+    <label>置信度</label>
+    <select id="f-conf"><option value="high">高 · 无需核对</option><option value="medium">中 · 建议确认</option><option value="low">低 · 需人工核对</option></select>
+    <label>证书照片（上传时自动保存的原件）</label>
+    <div id="f-photo" style="margin-bottom:10px"></div>
+    <div class="btn-row">
+      <button class="btn-save" id="btn-save">保存</button>
+      <button class="btn-cancel" id="btn-cancel">取消</button>
+      <button class="btn-del-card" id="btn-del-card" style="display:none">删除这张卡片</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept="image/*,.pdf" style="display:none">
+
+<!-- 识别中状态 -->
+<div class="overlay" id="processing">
+  <div class="form-card" style="text-align:center">
+    <h2 id="processing-title">正在识别…</h2>
+    <p id="processing-text" style="font-size:13px;color:var(--ink-soft);margin:12px 0">已上传照片，正在调用 xParse 解析文档…</p>
+  </div>
+</div>
+
+<!-- 识别结果预览 -->
+<div class="overlay" id="preview">
+  <div class="form-card">
+    <h2>识别完成</h2>
+    <p id="preview-info" style="font-size:13px;color:var(--ink-soft);margin-bottom:10px"></p>
+    <div id="preview-text" style="max-height:220px;overflow-y:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;font-size:13px;white-space:pre-wrap"></div>
+    <div class="btn-row">
+      <button class="btn-save" id="btn-confirm-card">确认为经历卡片</button>
+      <button class="btn-cancel" id="btn-reupload">重新上传</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  本页面为参赛演示作品，卡片数据来自公开样例证书（已脱敏）。项目基于 TextIn xParse 文档解析能力构建。在线编辑的内容仅保存在本机浏览器。
+</footer>
+
+<script>
+// ===== 数据：由 xParse 解析 + AI 结构化生成的经历卡片（含 AI 润色简历文案） =====
+const DEFAULT_CARDS = [
+  { id:"exp_001", title:"优秀志愿者", type:"荣誉证书", category:"志愿公益", org:"河北金融学院团委", date:"2025-12",
+    summary:"在2025年度青年志愿服务活动中表现突出，被评为优秀志愿者。",
+    highlights:["青年志愿服务","优秀志愿者"], confidence:"high", notes:"" },
+  { id:"exp_002", title:"大学生数学建模竞赛 省三等奖", type:"获奖证书", category:"荣誉奖项", org:"第十六届大学生数学建模竞赛组委会", date:"",
+    summary:"在第十六届大学生数学建模竞赛中，荣获河北省赛区三等奖。",
+    highlights:["学科竞赛","数学建模","省赛三等奖"], confidence:"medium", notes:"证书未注明年份，待补充" },
+  { id:"exp_003", title:"CET-4 英语四级 546分", type:"成绩证明", category:"技能证书", org:"教育部教育考试院", date:"",
+    summary:"大学英语四级总分546：听力181、阅读201、写作和翻译164。",
+    highlights:["总分546","阅读201"], confidence:"high", notes:"考试日期待补充" },
+  { id:"exp_004", title:"优秀志愿者（崇礼168越野赛）", type:"荣誉证书", category:"志愿公益", org:"共青团张家口市崇礼区委等", date:"2026-07-15",
+    summary:"在2026崇礼168超级越野赛期间积极参加城市志愿服务，表现优异，被评为优秀志愿者。",
+    highlights:["大型赛事志愿服务","双单位联合表彰"], confidence:"high", notes:"照片旋转90度，xParse自动校正" },
+  { id:"exp_005", title:"叶圣陶杯新作文大赛 省二等奖", type:"获奖证书", category:"荣誉奖项", org:"中国当代文学研究会", date:"2025-06",
+    summary:"作品《润物细无声》在第22届叶圣陶杯全国中学生新作文大赛中荣获省级二等奖。",
+    highlights:["国家级文学赛事","省级二等奖"], confidence:"high", notes:"证书链接内含身份证号，已自动脱敏" },
+  { id:"exp_006", title:"桑梓计划·返家乡社会实践", type:"服务证书", category:"实习实践", org:"张家口市委组织部、市人社局、团市委", date:"2026",
+    summary:"在桑梓计划大学生专题——2026年张家口市返家乡暑期社会实践中，圆满完成工作任务。",
+    highlights:["政务实践","三部门联合发证"], confidence:"medium", notes:"姓名已脱敏处理" }
+];
+
+const STORE_KEY = "shiguang_cards_v1";
+const CONF_LABEL = { high:"置信度高 · 无需核对", medium:"置信度中 · 建议人工确认", low:"置信度低 · 需人工核对" };
+
+let cards = [];
+let isDemo = false;   // 是否处于「首次来访演示态」：展示出厂卡片+横幅，用户保存或清空后永久退出
+try {
+  const saved = localStorage.getItem(STORE_KEY);
+  if (saved !== null) {
+    cards = JSON.parse(saved) || [];   // 只要存过就忠实使用（含空数组），演示卡片不再「删光复活」
+  } else {
+    cards = DEFAULT_CARDS.map(c => ({ ...c }));
+    isDemo = true;
+  }
+} catch (e) { cards = DEFAULT_CARDS.map(c => ({ ...c })); isDemo = true; }
+
+let currentCat = "全部";
+let currentView = "wall";
+let editingId = null;
+
+function persist() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(cards)); } catch (e) {}
+  isDemo = false;   // 用户一旦主动保存（上传/编辑/删除/清空），数据就是他自己的，演示横幅退场
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+function renderWall() {
+  const list = cards.filter(c => currentCat === "全部" || c.category === currentCat);
+  const wall = document.getElementById("wall");
+  wall.innerHTML = list.map(c => `
+    <div class="card" data-id="${esc(c.id)}">
+      <div class="row-top">
+        <h3>${esc(c.title)}</h3>
+        <span class="tag cat-${esc(c.category)}">${esc(c.category)}</span>
+      </div>
+      ${c.photo ? `<div class="card-photo"><button type="button" class="photo-bar" data-photo-toggle><span>证书照片</span><span class="photo-arrow">点击展开 ▾</span></button><div class="photo-wrap"><a href="${esc(c.photo)}" target="_blank" title="点开查看证书原件大图"><img src="${esc(c.photo)}" alt="证书照片"></a></div></div>` : ""}
+      <div class="org">${esc(c.org)}</div>
+      <div class="date">${c.date ? esc(c.date) : "时间待补充"}</div>
+      <div class="summary">${esc(c.summary)}</div>
+      <div class="hl">${(c.highlights||[]).map(h => `<span>${esc(h)}</span>`).join("")}</div>
+      <div class="conf"><b>${esc(CONF_LABEL[c.confidence] || "")}</b>${c.notes ? " · " + esc(c.notes) : ""}</div>
+      <div class="actions">
+        <button data-act="edit">编辑</button>
+        <button data-act="del" class="del">删除</button>
+      </div>
+    </div>`).join("") || `<p style="color:#6E6E66">该分类下暂无经历，点击「编辑模式」→「新增经历」即可添加。</p>`;
+}
+
+function renderTimeline() {
+  const sorted = [...cards].sort((a,b) => String(b.date).localeCompare(String(a.date)));
+  const list = sorted.filter(c => currentCat === "全部" || c.category === currentCat);
+  document.getElementById("timeline").innerHTML = list.map(c => `
+    <div class="tl-item">
+      <div class="tl-date">${c.date ? esc(c.date) : "时间待补充"}</div>
+      <div class="tl-title">${esc(c.title)}</div>
+      <div class="tl-org">${esc(c.org)} · ${esc(c.category)}</div>
+    </div>`).join("");
+}
+
+function refreshStats() {
+  document.getElementById("stat-cards").textContent = cards.length;
+  document.getElementById("stat-cats").textContent = new Set(cards.map(c => c.category)).size;
+}
+
+function update() {
+  renderWall(); renderTimeline(); refreshStats();
+  document.getElementById("wall").style.display = currentView === "wall" ? "grid" : "none";
+  document.getElementById("timeline").style.display = currentView === "tl" ? "block" : "none";
+  document.getElementById("btn-wall").classList.toggle("active", currentView === "wall");
+  document.getElementById("btn-tl").classList.toggle("active", currentView === "tl");
+  document.getElementById("demo-bar").style.display = isDemo ? "block" : "none";
+}
+
+// 一键清空演示数据：写入空数组并永久退出演示态（刷新后仍是空墙，示例不再复活）
+document.getElementById("btn-demo-clear").addEventListener("click", () => {
+  if (!confirm("确定清空全部 6 张演示卡片吗？\n清空后这里就是你的专属档案墙——上传第一张证书即可开始。")) return;
+  cards = [];
+  persist();
+  update();
+});
+
+// 分类筛选
+document.querySelectorAll(".chip[data-cat]").forEach(chip => {
+  chip.addEventListener("click", () => {
+    document.querySelectorAll(".chip[data-cat]").forEach(x => x.classList.remove("active"));
+    chip.classList.add("active");
+    currentCat = chip.dataset.cat;
+    update();
+  });
+});
+
+// 视图切换
+document.getElementById("btn-wall").addEventListener("click", () => { currentView = "wall"; update(); });
+document.getElementById("btn-tl").addEventListener("click", () => { currentView = "tl"; update(); });
+
+// 卡片操作（事件委托：照片折叠展开 / 编辑 / 删除）
+document.getElementById("wall").addEventListener("click", e => {
+  // 证书照片：默认收起，点击切换展开（更整洁，点开大图看原件）
+  const ph = e.target.closest("[data-photo-toggle]");
+  if (ph) {
+    const box = ph.closest(".card-photo");
+    box.classList.toggle("open");
+    ph.querySelector(".photo-arrow").textContent = box.classList.contains("open") ? "收起 ▴" : "点击展开 ▾";
+    return;
+  }
+  const btn = e.target.closest("button[data-act]");
+  if (!btn) return;
+  const card = e.target.closest(".card");
+  const id = card.dataset.id;
+  if (btn.dataset.act === "del") {
+    if (!confirm("确定删除这张卡片《" + (cards.find(c => c.id === id)?.title || "") + "》吗？\n（识别保存的照片原件仍保留在本机「输入照片」文件夹里）")) return;
+    cards = cards.filter(c => c.id !== id);
+    persist(); update();
+  } else if (btn.dataset.act === "edit") {
+    openForm(id);
+  }
+});
+
+// 表单
+function openForm(id, prefill) {
+  editingId = id;
+  const c = id ? cards.find(x => x.id === id) : (prefill || {});
+  window._prefillNotes = (prefill && prefill.notes) || "";
+  window._prefillPhoto = (prefill && prefill.photo) || "";
+  document.getElementById("form-title").textContent = id ? "编辑经历" : "新增经历";
+  document.getElementById("f-title").value = c.title || "";
+  document.getElementById("f-type").value = c.type || "荣誉证书";
+  document.getElementById("f-cat").value = c.category || "荣誉奖项";
+  document.getElementById("f-org").value = c.org || "";
+  document.getElementById("f-date").value = c.date || "";
+  document.getElementById("f-summary").value = c.summary || "";
+  document.getElementById("f-hl").value = (c.highlights || []).join(",");
+  document.getElementById("f-conf").value = c.confidence || "medium";
+  // 证书照片原件：编辑已有卡片时显示，可点开看大图
+  const ph = (id ? (cards.find(x => x.id === id) || {}).photo : window._prefillPhoto) || "";
+  document.getElementById("f-photo").innerHTML = ph
+    ? `<a href="${esc(ph)}" target="_blank" title="点开查看证书原件大图"><img src="${esc(ph)}" style="max-width:100%;max-height:150px;border-radius:8px;display:block;border:1px solid var(--line);cursor:zoom-in" alt="证书照片"></a>`
+    : `<span style="font-size:12px;color:var(--ink-soft)">暂无原件照片（手动新增的经历没有照片）</span>`;
+  document.getElementById("btn-del-card").style.display = id ? "" : "none";
+  document.getElementById("overlay").classList.add("show");
+}
+function closeForm() { document.getElementById("overlay").classList.remove("show"); editingId = null; }
+
+document.getElementById("btn-add").addEventListener("click", () => openForm(null));
+document.getElementById("btn-cancel").addEventListener("click", closeForm);
+// 表单内直接删除当前卡片
+document.getElementById("btn-del-card").addEventListener("click", () => {
+  if (!editingId) return;
+  if (!confirm("确定删除这张卡片《" + (cards.find(c => c.id === editingId)?.title || "") + "》吗？")) return;
+  cards = cards.filter(c => c.id !== editingId);
+  persist(); closeForm(); update();
+});
+document.getElementById("btn-save").addEventListener("click", () => {
+  const data = {
+    id: editingId || ("exp_" + Date.now()),
+    title: document.getElementById("f-title").value.trim() || "未命名经历",
+    type: document.getElementById("f-type").value,
+    category: document.getElementById("f-cat").value,
+    org: document.getElementById("f-org").value.trim(),
+    date: document.getElementById("f-date").value.trim(),
+    summary: document.getElementById("f-summary").value.trim(),
+    highlights: document.getElementById("f-hl").value.split(/[,，]/).map(s => s.trim()).filter(Boolean),
+    confidence: document.getElementById("f-conf").value,
+    photo: editingId ? ((cards.find(x => x.id === editingId) || {}).photo || "") : (window._prefillPhoto || ""),
+    notes: editingId ? (cards.find(x => x.id === editingId)?.notes || "") : (window._prefillNotes || "用户手动添加")
+  };
+  if (editingId && cards.some(c => c.id === editingId)) {
+    cards = cards.map(c => c.id === editingId ? {...c, ...data} : c);
+  } else {
+    cards.push(data);
+  }
+  persist(); closeForm(); update();
+});
+
+update();
+
+// ===== 身份卡（与「个人中心」共享 key: shiguang_profile_v1） =====
+const DEFAULT_ID = {
+  name: "王小明", school: "河北金融学院", major: "人工智能",
+  student_id: "2024****12", enroll: "2024-09", valid_until: "2028-06"
+};
+let idp = { ...DEFAULT_ID };
+try {
+  const s = localStorage.getItem("shiguang_profile_v1");
+  if (s) idp = { ...DEFAULT_ID, ...JSON.parse(s) };
+} catch (e) {}
+document.getElementById("id-avatar").textContent = (idp.name || "同").slice(0, 1);
+document.getElementById("id-name").textContent = idp.name || "未设置";
+document.getElementById("id-meta1").textContent =
+  (idp.school || "未设置学校") + " · " + (idp.major || "") + "专业 · " + ((idp.enroll || "20XX").slice(0, 4)) + "级";
+document.getElementById("id-meta2").textContent =
+  "学号 " + (idp.student_id || "未设置") + "（已脱敏） · 可在个人中心更新";
+
+// ===== 上传识别（调用本地服务 /api/upload） =====
+const btnUpload = document.getElementById("btn-upload");
+const fileInput = document.getElementById("file-input");
+let lastUpload = null;   // 最近一次识别结果
+
+function showOverlay(id, show) {
+  document.getElementById(id).classList.toggle("show", show);
+}
+
+btnUpload.addEventListener("click", () => fileInput.click());
+
+fileInput.addEventListener("change", () => {
+  const f = fileInput.files[0];
+  if (f) uploadFile(f);
+  fileInput.value = "";
+});
+
+async function uploadFile(file) {
+  btnUpload.disabled = true;
+  showOverlay("processing", true);
+  document.getElementById("processing-title").textContent = "正在识别…";
+  document.getElementById("processing-text").textContent =
+    "已上传《" + file.name + "》，xParse 正在解析文档并检测敏感信息…";
+  try {
+    const resp = await fetch("/api/upload?name=" + encodeURIComponent(file.name), {
+      method: "POST",
+      body: file,
+      headers: { "Content-Type": "application/octet-stream" }
+    });
+    const data = await resp.json();
+    showOverlay("processing", false);
+    if (!data.ok) {
+      alert("识别失败：" + (data.error || "未知错误"));
+      return;
+    }
+    lastUpload = data;
+    document.getElementById("preview-info").textContent =
+      "文件《" + file.name + "》已解析并脱敏（" +
+      (data.mask_count > 0 ? "拦截敏感信息 " + data.mask_count + " 处" : "未发现敏感信息") +
+      "）。照片原件已自动归档，生成卡片后可在卡片上点开查看。请核对下方解析文本，确认后进入卡片编辑。";
+    document.getElementById("preview-text").textContent = data.raw_text;
+    showOverlay("preview", true);
+  } catch (e) {
+    showOverlay("processing", false);
+    alert("无法连接本地识别服务。请先双击运行 start.bat 启动服务后再试。");
+  } finally {
+    btnUpload.disabled = false;
+  }
+}
+
+// 标题相似度：识别「两张照片可能是同一个奖」的情况
+// ①完全相同=1；②短标题整个出现在长标题里（如「优秀志愿者」vs「优秀志愿者（崇礼168越野赛）」）——前缀 0.8、字串 0.7；③否则用双字组 Jaccard
+function titleSim(a, b) {
+  const norm = s => String(s || "").replace(/[\s：:，。、·・（）()【】《》\-—]/g, "");
+  const x = norm(a), y = norm(b);
+  if (!x || !y) return 0;
+  if (x === y) return 1;
+  const lo = x.length <= y.length ? x : y;
+  const hi = x.length <= y.length ? y : x;
+  if (hi.includes(lo)) {
+    if (hi.startsWith(lo)) return 0.8;      // 「优秀志愿者」vs「优秀志愿者（崇礼…）」这类带后缀写法
+    if (lo.length >= 4) return 0.7;
+    return Math.max(0.55, lo.length / hi.length);
+  }
+  const bg = t => { const s = new Set(); for (let i = 0; i < t.length - 1; i++) s.add(t.slice(i, i + 2)); return s; };
+  const A = bg(x), B = bg(y);
+  let inter = 0; A.forEach(g => { if (B.has(g)) inter++; });
+  const u = A.size + B.size - inter;
+  return u ? inter / u : 0;
+}
+
+document.getElementById("btn-confirm-card").addEventListener("click", () => {
+  const d = lastUpload;
+  if (!d) return;
+  // ① 完全相同的照片之前上传过
+  if (d.dup && !confirm("提示：这张照片之前已经上传识别过（完全相同的照片，原件复用）。\n仍要再生成一张卡片吗？")) {
+    showOverlay("preview", false);
+    lastUpload = null;
+    return;
+  }
+  // ② 标题相似 → 可能是同一个奖的两张照片
+  const hit = cards.map(c => ({ c, s: titleSim(d.title, c.title) }))
+    .reduce((best, cur) => (cur.s > best.s ? cur : best), { c: null, s: 0 });
+  if (hit.s >= 0.5) {
+    const keep = confirm("检测到已有相似记录《" + hit.c.title + "》（相似度 " + Math.round(hit.s * 100) + "%）\n\n两张照片可能是同一个奖。\n点「确定」仍新建一张卡片；点「取消」放弃保存。");
+    if (!keep) {
+      const edit = confirm("不保存新卡片。\n要打开已有记录《" + hit.c.title + "》进行编辑或删除吗？");
+      showOverlay("preview", false);
+      lastUpload = null;
+      if (edit) openForm(hit.c.id);
+      return;
+    }
+  }
+  showOverlay("preview", false);
+  openForm(null, {
+    title: d.title,
+    category: d.category,
+    date: d.date,
+    org: d.org || "",
+    summary: d.summary,
+    highlights: (d.highlights && d.highlights.length ? d.highlights : d.mask_hits.slice(0, 3)),
+    confidence: d.mask_count > 0 || !d.date ? "medium" : "high",
+    photo: d.photo || "",
+    notes: "由网页上传识别生成（xParse 解析 + 自动脱敏" + (d.mask_count ? "，" + d.mask_count + " 处已打码" : "") + "）"
+  });
+});
+
+document.getElementById("btn-reupload").addEventListener("click", () => {
+  showOverlay("preview", false);
+  fileInput.click();
+});
+</script>
+<script src="feedback.js"></script>
+</body>
+</html>

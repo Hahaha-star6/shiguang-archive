@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>个人中心 · 拾光档案</title>
+<style>
+  :root {
+    --bg: #F5F4EF; --paper: #FFFFFF; --ink: #2B2B28; --ink-soft: #6E6E66;
+    --line: #E8E6DE; --green: #1E4D3B; --green-soft: #E7F0EB;
+    --gold: #C9A227; --gold-soft: #F7F1DE; --radius: 14px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.6; }
+
+  header { background: var(--green); color: #F2F5F0; padding: 26px 24px; }
+  .header-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 13px; font-size: 22px; font-weight: 700; letter-spacing: 2px; margin-right: auto; }
+  .brand .seal { width: 40px; height: 40px; border-radius: 10px; background: var(--gold); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; }
+  .btn-nav { background: transparent; color: #F2F0E4; border: 1.5px solid var(--gold); border-radius: 999px; padding: 8px 18px; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; }
+  .btn-nav:hover { background: rgba(255,255,255,.12); }
+
+  .container { max-width: 960px; margin: 22px auto 60px; padding: 0 24px; display: flex; flex-direction: column; gap: 18px; }
+  .panel { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+  .panel h2 { font-size: 16px; color: var(--green); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .panel h2::before { content: ""; width: 6px; height: 18px; background: var(--gold); border-radius: 3px; }
+  .hint { font-size: 13px; color: var(--ink-soft); margin-bottom: 12px; line-height: 1.7; }
+
+  /* 身份卡展示 */
+  .id-card { display: flex; align-items: center; gap: 18px; background: linear-gradient(120deg, #F7F1DE, #FFFFFF); border: 1px solid #E7D9A8; border-radius: 12px; padding: 18px 20px; }
+  .avatar { width: 64px; height: 64px; flex: none; border-radius: 50%; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; }
+  .id-card .name { font-size: 20px; font-weight: 800; }
+  .id-card .meta { font-size: 13px; color: var(--ink-soft); margin-top: 3px; }
+  .id-card .shield-tag { margin-left: auto; font-size: 12px; color: var(--green); background: var(--green-soft); border-radius: 999px; padding: 5px 12px; font-weight: 600; flex: none; }
+
+  .btn-primary { background: var(--green); color: #fff; border: none; border-radius: 10px; padding: 11px 22px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .btn-primary:hover { opacity: .92; }
+  .btn-primary:disabled { opacity: .55; cursor: wait; }
+
+  /* 表单 */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+  .form-grid label { display: block; font-size: 13px; color: var(--ink-soft); margin-bottom: 4px; }
+  .form-grid input, .form-grid textarea {
+    width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px;
+    font-size: 14px; font-family: inherit; background: var(--bg); color: var(--ink);
+  }
+  .form-grid textarea { resize: vertical; min-height: 56px; }
+  .full { grid-column: 1 / -1; }
+  /* 自定义字段 */
+  .custom-line { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .custom-line input { flex: 1; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; background: var(--bg); }
+  .custom-line input:first-child { flex: none; width: 110px; }
+  .btn-del-c { flex: none; border: none; background: #F3E5E2; color: #B23A2E; border-radius: 8px; width: 34px; height: 34px; cursor: pointer; font-size: 15px; }
+  .btn-add { border: 1.5px dashed var(--gold); background: var(--gold-soft); color: #8A6D1B; border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; font-weight: 600; }
+  .customs-wrap { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 14px; }
+  /* 多段学历 */
+  .edu-wrap { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 14px; }
+  .edu-item { border: 1px solid var(--line); border-radius: 10px; padding: 12px 12px 10px; margin-bottom: 10px; background: #FDFCF8; }
+  .edu-item .edu-head { display: flex; align-items: center; margin-bottom: 8px; }
+  .edu-item .edu-no { font-size: 13px; font-weight: 700; color: var(--green); }
+  .edu-item .btn-del-e { margin-left: auto; border: none; background: #F3E5E2; color: #B23A2E; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 15px; line-height: 1; }
+  .edu-item .edu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+  .edu-item label { display: block; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 3px; }
+  .edu-item input { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; background: var(--bg); }
+  /* 识别结果去向选择 */
+  .edu-choice { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .edu-choice label { display: flex; align-items: center; gap: 6px; font-size: 13.5px; border: 1.5px solid var(--line); border-radius: 10px; padding: 9px 13px; cursor: pointer; background: var(--bg); }
+  .edu-choice input { accent-color: var(--green); }
+  .edu-choice label.on { border-color: var(--green); background: var(--green-soft); }
+  .sid-hint { grid-column: 1 / -1; font-size: 12px; color: var(--gold); background: var(--gold-soft); border-radius: 8px; padding: 8px 12px; }
+  .btn-row { margin-top: 16px; display: flex; align-items: center; gap: 14px; }
+  .btn-save { background: var(--gold); color: var(--green); border: none; border-radius: 10px; padding: 11px 28px; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .btn-save:hover { opacity: .92; }
+  #save-tip { font-size: 13px; color: var(--green); }
+
+  /* 弹窗 */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(20,20,20,.45); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
+  .overlay.show { display: flex; }
+  .box { background: var(--paper); border-radius: var(--radius); padding: 24px; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; }
+  .box h2 { font-size: 17px; margin-bottom: 14px; }
+  .box table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 12px; }
+  .box td { border: 1px solid var(--line); padding: 8px 12px; }
+  .box td:first-child { background: var(--bg); width: 90px; color: var(--ink-soft); font-size: 13px; }
+  .warn { font-size: 12.5px; color: #8A6D1B; background: var(--gold-soft); border-radius: 8px; padding: 10px 12px; margin-bottom: 14px; white-space: pre-wrap; }
+  .raw { max-height: 140px; overflow-y: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px; font-size: 12.5px; white-space: pre-wrap; color: var(--ink-soft); margin-bottom: 14px; }
+  .box .btn-row { display: flex; gap: 10px; }
+  .box button { flex: 1; border: none; border-radius: 8px; padding: 10px; font-size: 14px; cursor: pointer; }
+  .btn-confirm { background: var(--green); color: #fff; font-weight: 600; }
+  .btn-cancel { background: #EFEFF2; color: var(--ink); border: 1px solid var(--line); }
+
+  footer { max-width: 960px; margin: 0 auto; padding: 20px 24px 30px; text-align: center; font-size: 12px; color: var(--ink-soft); }
+  @media (max-width: 640px) { .form-grid, .edu-item .edu-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand"><span class="seal">拾</span><span>拾光档案 · 个人中心</span></div>
+    <button class="btn-nav" data-feedback style="font:inherit">问题反馈</button>
+    <a class="btn-nav" href="index.html">← 返回档案馆</a>
+  </div>
+</header>
+
+<div class="container">
+  <!-- 身份卡 -->
+  <section class="panel">
+    <h2>我的身份卡</h2>
+    <div class="id-card">
+      <div class="avatar" id="p-avatar">王</div>
+      <div>
+        <div class="name" id="p-name">王小明</div>
+        <div class="meta" id="p-meta">河北金融学院 · 人工智能 · 2024级</div>
+        <div class="meta" id="p-sid">学号 2024****12（已脱敏）</div>
+      </div>
+      <div class="shield-tag">学号已脱敏展示</div>
+    </div>
+  </section>
+
+  <!-- 识别身份 -->
+  <section class="panel">
+    <h2>识别身份</h2>
+    <p class="hint">
+      上传学生证 / 校园卡照片，xParse 自动识别姓名、学号、学校、专业等信息；
+      识别出的学校与专业，可选择「填入当前学历」或「存为新增学历段」（如高中、研究生证件）。
+      识别结果先经人工核对，学号保存时自动打码，完整号码不会保留。
+    </p>
+    <button class="btn-primary" id="btn-identify">＋ 上传学生证识别身份</button>
+  </section>
+
+  <!-- 编辑个人信息 -->
+  <section class="panel">
+    <h2>编辑个人信息</h2>
+    <p class="hint">以下信息与档案馆首页、简历工作台自动同步（仅保存在本机浏览器）。</p>
+    <div class="form-grid">
+      <div><label>姓名</label><input id="f-name" placeholder="如：王小明"></div>
+      <div><label>学校</label><input id="f-school" placeholder="如：河北金融学院"></div>
+      <div><label>专业</label><input id="f-major" placeholder="如：人工智能"></div>
+      <div><label>学号</label><input id="f-sid" placeholder="保存时自动打码"></div>
+      <div><label>入学年月</label><input id="f-enroll" placeholder="如：2024-09"></div>
+      <div><label>有效期至</label><input id="f-valid" placeholder="如：2028-06"></div>
+      <div><label>电话</label><input id="f-phone" placeholder="如：138****5678"></div>
+      <div><label>邮箱</label><input id="f-email" placeholder="如：wangxm@example.com"></div>
+      <div><label>住址（门牌号）</label><input id="f-address" placeholder="如：河北省张家口市XX区XX路XX号"></div>
+      <div><label>求职意向</label><input id="f-intent" placeholder="如：人工智能算法实习生"></div>
+      <div><label>GPA</label><input id="f-gpa" placeholder="如：3.8 / 4.0（可留空）"></div>
+      <div class="full"><label>主修课程</label><input id="f-courses" placeholder="如：高等数学、C语言、数据结构、机器学习"></div>
+      <div class="full"><label>自我评价</label><textarea id="f-self" placeholder="一句话总结你的优势，如：学习能力强，动手实践多，正以拾光档案项目参加AI竞赛"></textarea></div>
+      <div class="sid-hint">隐私说明：学号在保存时自动保留前 4 位与后 2 位、中间打码；完整学号仅用于识别核对，不会写入档案。</div>
+    </div>
+    <div class="edu-wrap">
+      <label style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:8px">其他学历段（高中 / 研究生 / 交换经历等 · 与简历工作台自动同步）</label>
+      <div id="edu-list"></div>
+      <button class="btn-add" id="btn-add-edu" type="button">＋ 添加一段学历</button>
+      <p class="hint" style="margin:10px 0 0">第一段学历即上方登记的「学校 / 专业 / 入学年月」；这里添加的其他学历段会自动同步到简历工作台的「教育经历」。</p>
+    </div>
+    <div class="customs-wrap">
+      <label style="display:block;font-size:13px;color:var(--ink-soft);margin-bottom:8px">自定义信息（如：政治面貌 / 微信 / 籍贯 / 门牌号——名称自己起）</label>
+      <div id="custom-list"></div>
+      <button class="btn-add" id="btn-add-custom" type="button">＋ 添加自定义字段</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn-save" id="btn-save">保存信息</button>
+      <span id="save-tip"></span>
+    </div>
+  </section>
+</div>
+
+<footer>拾光档案 · 身份信息仅保存在本机浏览器（localStorage），不会上传至任何服务器。</footer>
+
+<input type="file" id="file-input" accept="image/*" style="display:none">
+
+<!-- 识别中 -->
+<div class="overlay" id="processing">
+  <div class="box" style="text-align:center">
+    <h2>正在识别…</h2>
+    <p class="hint">xParse 正在解析学生证并检测敏感信息，请稍候。</p>
+  </div>
+</div>
+
+<!-- 识别结果预览 -->
+<div class="overlay" id="preview">
+  <div class="box">
+    <h2>学生证识别结果</h2>
+    <table>
+      <tbody id="idp-table"></tbody>
+    </table>
+    <div class="warn" id="idp-warn" style="display:none"></div>
+    <div class="edu-choice">
+      <label class="on"><input type="radio" name="edu-target" value="current" checked> 填入当前学历（更新第一段）</label>
+      <label><input type="radio" name="edu-target" value="new"> 存为新增学历段（高中 / 研究生等）</label>
+    </div>
+    <div class="raw" id="idp-raw"></div>
+    <div class="btn-row">
+      <button class="btn-confirm" id="btn-confirm">确认填入表单</button>
+      <button class="btn-cancel" id="btn-cancel">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== 共享档案 key：与 首页 / 简历页 三端同步 =====
+const ID_KEY = "shiguang_profile_v1";
+const DEFAULT_ID = {
+  name: "", school: "", major: "",
+  student_id: "", enroll: "", valid_until: "",
+  phone: "", email: "",
+  address: "", intent: "", gpa: "", courses: "", self: "",
+  customs: [
+    { label: "籍贯", value: "" },
+    { label: "政治面貌", value: "" }
+  ],
+  edus: []   // 其他学历段（高中/研究生等，与简历工作台双向同步）
+};
+let idp = { ...DEFAULT_ID };
+try {
+  const s = localStorage.getItem(ID_KEY);
+  if (s) idp = { ...DEFAULT_ID, ...JSON.parse(s) };
+  // 旧版本：学历段曾存在「简历工作台」的存储里，这里一次性迁移过来
+  if (!Array.isArray(idp.edus)) {
+    const r = JSON.parse(localStorage.getItem("shiguang_resume_v1") || "{}");
+    idp.edus = Array.isArray(r.edus) ? r.edus : [];
+  }
+} catch (e) {}
+
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function maskSid(s) {
+  s = String(s || "").trim();
+  if (s.length >= 8) return s.slice(0, 4) + "*".repeat(s.length - 6) + s.slice(-2);
+  return s.length > 2 ? s.slice(0, 2) + "***" : "***";
+}
+
+function render() {
+  document.getElementById("p-avatar").textContent = (idp.name || "同").slice(0, 1);
+  document.getElementById("p-name").textContent = idp.name || "未设置";
+  document.getElementById("p-meta").textContent =
+    (idp.school || "未设置学校") + " · " + (idp.major || "") + " · " + ((idp.enroll || "20XX").slice(0, 4)) + "级";
+  document.getElementById("p-sid").textContent = "学号 " + (idp.student_id || "未设置") + "（已脱敏）";
+  const fill = (id, v) => { document.getElementById(id).value = v || ""; };
+  fill("f-name", idp.name); fill("f-school", idp.school); fill("f-major", idp.major);
+  fill("f-sid", idp.student_id); fill("f-enroll", idp.enroll); fill("f-valid", idp.valid_until);
+  fill("f-phone", idp.phone); fill("f-email", idp.email);
+  fill("f-address", idp.address); fill("f-intent", idp.intent);
+  fill("f-gpa", idp.gpa); fill("f-courses", idp.courses); fill("f-self", idp.self);
+  renderCustoms();
+  renderEdus();
+}
+
+// 自定义字段列表
+function renderCustoms() {
+  const list = document.getElementById("custom-list");
+  const customs = (idp.customs && idp.customs.length) ? idp.customs : [{ label: "", value: "" }];
+  list.innerHTML = customs.map((cm, i) => `
+    <div class="custom-line" data-i="${i}">
+      <input class="c-label" placeholder="字段名（如：籍贯）" value="${esc(cm.label)}">
+      <input class="c-value" placeholder="内容（如：河北张家口）" value="${esc(cm.value)}">
+      <button class="btn-del-c" type="button" title="删除该字段">×</button>
+    </div>`).join("");
+}
+document.getElementById("btn-add-custom").addEventListener("click", () => {
+  idp.customs = idp.customs || [];
+  idp.customs.push({ label: "", value: "" });
+  renderCustoms();
+});
+document.getElementById("custom-list").addEventListener("click", e => {
+  if (e.target.classList.contains("btn-del-c")) {
+    const i = parseInt(e.target.closest(".custom-line").dataset.i, 10);
+    idp.customs = idp.customs || [];
+    idp.customs.splice(i, 1);
+    renderCustoms();
+  }
+});
+
+// ===== 多段学历：第一段=上方当前学历，这里管理高中/研究生等其他学历段 =====
+function renderEdus() {
+  const list = document.getElementById("edu-list");
+  const edus = (idp.edus && idp.edus.length) ? idp.edus : [];
+  list.innerHTML = edus.map((e, i) => `
+    <div class="edu-item" data-i="${i}">
+      <div class="edu-head"><span class="edu-no">学历段 ${i + 2}</span><button class="btn-del-e" type="button" title="删除该学历段">×</button></div>
+      <div class="edu-grid">
+        <div><label>学校名称</label><input class="e-school" placeholder="如：张家口市第一中学" value="${esc(e.school)}"></div>
+        <div><label>学历层次</label><input class="e-degree" placeholder="如：高中 / 硕士研究生" value="${esc(e.degree)}"></div>
+        <div><label>所学专业</label><input class="e-major" placeholder="无专业可留空" value="${esc(e.major)}"></div>
+        <div><label>起止时间</label><input class="e-period" placeholder="如：2021-09 – 2024-07" value="${esc(e.period)}"></div>
+        <div><label>GPA / 成绩</label><input class="e-gpa" placeholder="可留空" value="${esc(e.gpa)}"></div>
+        <div><label>主修课程</label><input class="e-courses" placeholder="可留空" value="${esc(e.courses)}"></div>
+      </div>
+    </div>`).join("") || `<p class="hint" style="margin-bottom:10px">还没添加其他学历段。识别学生证时也可选择「存为新增学历段」自动生成。</p>`;
+}
+document.getElementById("btn-add-edu").addEventListener("click", () => {
+  idp.edus = idp.edus || [];
+  idp.edus.push({ school: "", degree: "", major: "", period: "", gpa: "", courses: "" });
+  renderEdus();
+});
+document.getElementById("edu-list").addEventListener("click", e => {
+  if (e.target.classList.contains("btn-del-e")) {
+    const i = parseInt(e.target.closest(".edu-item").dataset.i, 10);
+    idp.edus = idp.edus || [];
+    idp.edus.splice(i, 1);
+    renderEdus();
+  }
+});
+
+document.getElementById("btn-save").addEventListener("click", () => {
+  const val = id => document.getElementById(id).value.trim();
+  const customs = Array.from(document.querySelectorAll("#custom-list .custom-line"))
+    .map(line => ({
+      label: line.querySelector(".c-label").value.trim(),
+      value: line.querySelector(".c-value").value.trim()
+    }))
+    .filter(cm => cm.label || cm.value);   // 过滤全空行
+  const edus = Array.from(document.querySelectorAll("#edu-list .edu-item"))
+    .map(item => ({
+      school: item.querySelector(".e-school").value.trim(),
+      degree: item.querySelector(".e-degree").value.trim(),
+      major: item.querySelector(".e-major").value.trim(),
+      period: item.querySelector(".e-period").value.trim(),
+      gpa: item.querySelector(".e-gpa").value.trim(),
+      courses: item.querySelector(".e-courses").value.trim()
+    }))
+    .filter(e => e.school || e.degree || e.major || e.period || e.gpa || e.courses);   // 过滤空学历段
+  idp = {
+    name: val("f-name"), school: val("f-school"), major: val("f-major"),
+    student_id: maskSid(val("f-sid")),
+    enroll: val("f-enroll"), valid_until: val("f-valid"),
+    phone: val("f-phone"), email: val("f-email"),
+    address: val("f-address"), intent: val("f-intent"),
+    gpa: val("f-gpa"), courses: val("f-courses"), self: val("f-self"),
+    customs: customs, edus: edus
+  };
+  try { localStorage.setItem(ID_KEY, JSON.stringify(idp)); } catch (e) {}
+  render();
+  const tip = document.getElementById("save-tip");
+  tip.textContent = "已保存，档案馆与简历页已同步（学号已自动打码）";
+  setTimeout(() => { tip.textContent = ""; }, 3500);
+});
+
+// ===== 学生证识别 =====
+const btnIdentify = document.getElementById("btn-identify");
+const fileInput = document.getElementById("file-input");
+let lastIdentity = null;
+
+function showOverlay(id, show) { document.getElementById(id).classList.toggle("show", show); }
+
+btnIdentify.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", () => {
+  const f = fileInput.files[0];
+  if (f) uploadId(f);
+  fileInput.value = "";
+});
+
+async function uploadId(file) {
+  btnIdentify.disabled = true;
+  showOverlay("processing", true);
+  try {
+    const resp = await fetch("/api/student-card?name=" + encodeURIComponent(file.name), {
+      method: "POST", body: file, headers: { "Content-Type": "application/octet-stream" }
+    });
+    const d = await resp.json();
+    showOverlay("processing", false);
+    if (!d.ok) { alert("识别失败：" + (d.error || "未知错误")); return; }
+    lastIdentity = d;
+    const rows = [
+      ["姓名", d.name || "未识别"],
+      ["学校", d.school || "未识别"],
+      ["专业", d.major || "未识别"],
+      ["学号", (d.student_id_masked || "未识别") + "（已脱敏）"],
+      ["入学", d.enroll || "未识别"],
+      ["有效期", d.valid_until || "未识别"]
+    ];
+    document.getElementById("idp-table").innerHTML = rows
+      .map(r => "<tr><td>" + esc(r[0]) + "</td><td>" + esc(r[1]) + "</td></tr>").join("");
+    const warnEl = document.getElementById("idp-warn");
+    const warns = d.warnings || [];
+    warnEl.textContent = warns.length ? "⚠ " + warns.join("\n⚠ ") : "";
+    warnEl.style.display = warns.length ? "" : "none";
+    document.getElementById("idp-raw").textContent = d.raw_text || "";
+    showOverlay("preview", true);
+  } catch (e) {
+    showOverlay("processing", false);
+    alert("无法连接本地服务，请先双击 start.bat 启动服务后再试。");
+  } finally {
+    btnIdentify.disabled = false;
+  }
+}
+
+// 识别结果去向的高亮边框
+document.querySelectorAll('.edu-choice input[name="edu-target"]').forEach(r => {
+  r.addEventListener("change", () => {
+    document.querySelectorAll(".edu-choice label").forEach(l =>
+      l.classList.toggle("on", l.querySelector("input").checked));
+  });
+});
+
+// 学校名相似判断：完全一致 / 一个包含另一个（覆盖「河北金融学院」vs「河北金融学院（校本部）」这类写法差异）
+function sameSchool(a, b) {
+  a = String(a || "").replace(/\s/g, ""); b = String(b || "").replace(/\s/g, "");
+  return !!a && !!b && (a === b || a.includes(b) || b.includes(a));
+}
+
+function fillCurrentFromIdentity(d) {
+  document.getElementById("f-school").value = d.school || "";
+  document.getElementById("f-major").value = d.major || "";
+  document.getElementById("f-enroll").value = d.enroll || "";
+  document.getElementById("f-valid").value = d.valid_until || "";
+}
+
+// 识别结果存为新增学历段（多重防重：与当前学历或已有学历段撞车时引导更新而非重复新增）
+function addEduFromIdentity(d) {
+  const school = (d.school || "").trim();
+  if (!school) {
+    alert("这次识别没有提取到学校，无法新增学历段。\n已改为填入当前学历，可手动修改。");
+    fillCurrentFromIdentity(d);
+    return;
+  }
+  idp.edus = idp.edus || [];
+  const curSchool = document.getElementById("f-school").value.trim();
+  if (curSchool && sameSchool(school, curSchool)) {
+    if (confirm("识别到的学校「" + school + "」与「当前学历」相同。\n确定要更新当前学历吗？（取消则不修改学历，仅更新姓名/学号）")) {
+      fillCurrentFromIdentity(d);
+    }
+    return;
+  }
+  const idx = idp.edus.findIndex(e => sameSchool(e.school, school));
+  if (idx >= 0) {
+    if (confirm("已存在相近的学历段（第 " + (idx + 2) + " 段 · " + idp.edus[idx].school + "）。\n确定要更新该学历段吗？（取消则放弃本次新增）")) {
+      const e = idp.edus[idx];
+      if (d.major) e.major = d.major;
+      if (d.enroll || d.valid_until) e.period = [d.enroll, d.valid_until].filter(Boolean).join(" – ");
+      e.school = school;
+      renderEdus();
+    }
+    return;
+  }
+  idp.edus.push({
+    school: school,
+    degree: "",
+    major: d.major || "",
+    period: [d.enroll, d.valid_until].filter(Boolean).join(" – ") || "",
+    gpa: "", courses: ""
+  });
+  renderEdus();
+}
+
+document.getElementById("btn-confirm").addEventListener("click", () => {
+  const d = lastIdentity;
+  if (!d) return;
+  document.getElementById("f-name").value = d.name || "";
+  document.getElementById("f-sid").value = d.student_id_masked || "";
+  const target = (document.querySelector('input[name="edu-target"]:checked') || {}).value || "current";
+  if (target === "new") addEduFromIdentity(d);
+  else fillCurrentFromIdentity(d);
+  showOverlay("preview", false);
+  const tip = document.getElementById("save-tip");
+  tip.textContent = target === "new"
+    ? "已作为新增学历段暂存，请核对后点「保存信息」生效（自动同步到简历）"
+    : "识别结果已填入表单，请核对后点「保存信息」";
+});
+
+document.getElementById("btn-cancel").addEventListener("click", () => showOverlay("preview", false));
+
+render();
+</script>
+<script src="feedback.js"></script>
+</body>
+</html>
