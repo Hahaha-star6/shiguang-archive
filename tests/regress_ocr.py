@@ -42,6 +42,12 @@ def main():
         print("  cat     =", cat, "| highlights =", "/".join(hl) if hl else "（空）")
         print("  summary =", server.guess_summary(masked, title=title)[:90])
         print(f"  masked  = {len(hits)} 处", ("（前端会回退为「XX已脱敏」标签）" if hits and not hl else ""))
+        # 学生证/学籍卡类原文：顺带回归身份字段提取（冒号格式与 HTML 表格格式都要覆盖）
+        if "学号" in masked:
+            ident = server.extract_identity(masked)
+            print("  identity= {name} | {school} | {major} | {sid} | {en}~{val}".format(
+                name=ident["name"], school=ident["school"], major=ident["major"],
+                sid=ident["student_id_masked"], en=ident["enroll"], val=ident["valid_until"]))
         print()
     print(f"共回归 {len(files)} 份识别原文。如发现某张证书字段变差，请保留该 .md 并调整规则后重跑本脚本。")
 

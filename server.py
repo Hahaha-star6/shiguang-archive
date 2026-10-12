@@ -688,9 +688,75 @@ ID_PATTERNS = {
     "school": re.compile(r"([\u4e00-\u9fa5]{2,20}(?:大学|学院|学校))"),
     "major": re.compile(r"专\s*业[:：]\s*([\u4e00-\u9fa5A-Za-z0-9()（）]{2,20})"),
     "student_id": re.compile(r"学\s*号[:：]\s*([0-9A-Za-z()（）]{6,20})"),
-    "enroll": re.compile(r"入学\s*年份[:：]?\s*(20\d{2})年\s*(\d{1,2})?月?"),
+    "enroll": re.compile(r"入学\s*(?:年份|时间|年月|日期)?[:：]?\s*(20\d{2})年\s*(\d{1,2})?月?"),
     "valid": re.compile(r"有效期至[:：]?\s*(20\d{2})年\s*(\d{1,2})?月?"),
 }
+
+# xParse 对「表格版学生证/学籍卡」会返回 HTML <table>：标签和值在相邻 <td> 里（没有冒号）
+# 标签别名 → 标准字段
+ID_TABLE_LABELS = {
+    "name": ("姓名", "名字"),
+    "sid": ("学号", "学籍号", "考生号", "考籍号"),
+    "school": ("二级学院", "所在学院", "学院", "院系", "系部", "学校", "院校", "学校名称", "培养单位", "校名"),
+    "major": ("专业名称", "所学专业", "专业", "专业班级"),
+    "enroll": ("入学时间", "入学年月", "入学日期", "入学年份", "入校时间"),
+    "valid": ("有效期至", "有效期限", "有效期", "截止日期", "到期日期"),
+}
+_TD_RE = re.compile(r"<td[^>]*>(.*?)</td>", re.I | re.S)
+# 只是标签、不是真实校名的词（防止「二级学院」被当学校值）
+_SCHOOL_LABEL_ONLY = {"二级学院", "学院", "院系", "系部", "学校", "院校", "校名", "培养单位", "所在学院", "学校名称"}
+
+
+def _td_text(s):
+    return re.sub(r"<[^>]+>", "", s).replace("&nbsp;", " ").strip()
+
+
+def parse_table_fields(text):
+    """解析 xParse 返回的 HTML 表格，按「标签格 → 其后第一个有效内容格」配对"""
+    cells = [_td_text(x) for x in _TD_RE.findall(text)]
+    label_to_key = {}
+    for key, labels in ID_TABLE_LABELS.items():
+        for lb in labels:
+            label_to_key[lb] = key
+    fields = {}
+    for i, cell in enumerate(cells):
+        key = label_to_key.get(cell.replace(" ", ""))
+        if not key or key in fields:
+            continue
+        for v in cells[i + 1: i + 4]:
+            v = v.strip()
+            if not v or v.replace(" ", "") in label_to_key:
+                continue
+            # 日期字段只认真实年份，跳过「20 年 月 日」空白占位
+            if key in ("enroll", "valid") and not re.search(r"(20\d{2})", v):
+                continue
+            fields[key] = v
+            break
+    return fields
+
+
+def _year_month(text):
+    """从一段文本里取「2024年9月 / 2024-09」，返回 2024-09；月份缺失默认 9 月（开学季）"""
+    m = re.search(r"(20\d{2})\s*年\s*(\d{1,2}|十[一二两]?|[一二三四五六七八九])?\s*月?", text)
+    if not m:
+        return ""
+    mm_raw = m.group(2)
+    if mm_raw is None:
+        month = 9
+    elif mm_raw.isdigit():
+        month = int(mm_raw)
+    else:
+        month = CN_MONTH.get(mm_raw.replace("两", "二"), 9)
+    if not (1 <= month <= 12):
+        month = 9
+    return f"{m.group(1)}-{month:02d}"
+
+
+def _looks_like_school(s):
+    s = (s or "").strip(" ：: ")
+    if s in _SCHOOL_LABEL_ONLY or len(s) < 4:
+        return False
+    return bool(re.search(r"(?:大学|学院|学校)$", s))
 
 
 def mask_sid(sid: str) -> str:
@@ -702,32 +768,67 @@ def mask_sid(sid: str) -> str:
 
 
 def extract_identity(text):
-    """从解析文本中抽取身份字段，附带人工核对提示"""
-    def grab(pattern, default=""):
-        m = pattern.search(text)
-        if not m:
-            return default
-        return re.sub(r"[\s：:]+", "", m.group(1))
-
+    """从解析文本中抽取身份字段，附带人工核对提示。
+    优先读 HTML 表格版学籍卡（<td>标签</td><td>值</td>），再用「标签：值」正则兜底。"""
     warnings = []
-    sid_raw = grab(ID_PATTERNS["student_id"])
+    tbl = parse_table_fields(text)
+
+    # ---- 学号 ----
+    sid_raw = tbl.get("sid", "")
+    if not sid_raw:
+        m = ID_PATTERNS["student_id"].search(text)
+        sid_raw = m.group(1) if m else ""
+    sid_raw = re.sub(r"[\s：:]+", "", sid_raw)
     sid_clean = re.sub(r"[^0-9A-Za-z]", "", sid_raw)
     if sid_raw and sid_clean != sid_raw:
         warnings.append(f"学号识别结果含特殊字符（{sid_raw}），已自动清理为 {sid_clean}，请核对")
 
-    enroll, valid = "", ""
-    m = ID_PATTERNS["enroll"].search(text)
-    if m:
-        enroll = f"{m.group(1)}-{int(m.group(2) or 9):02d}"
-    m = ID_PATTERNS["valid"].search(text)
-    if m:
-        valid = f"{m.group(1)}-{int(m.group(2) or 6):02d}"
-
-    name = grab(ID_PATTERNS["name"])
-    school = grab(ID_PATTERNS["school"])
-    major = grab(ID_PATTERNS["major"])
+    # ---- 姓名 ----
+    name = tbl.get("name", "")
+    if not name:
+        m = ID_PATTERNS["name"].search(text)
+        name = m.group(1) if m else ""
+    name = re.sub(r"[\s：:]+", "", name)
     if not name:
         warnings.append("未识别到姓名，请手动填写")
+
+    # ---- 学校/学院（表格值优先；正则兜底时排除「二级学院」这类标签词） ----
+    school = tbl.get("school", "")
+    if not _looks_like_school(school):
+        school = ""
+    if not school:
+        for m in ID_PATTERNS["school"].finditer(text):
+            cand = m.group(1).strip(" ：: ")
+            if _looks_like_school(cand):
+                school = cand
+                break
+
+    # ---- 专业 ----
+    major = tbl.get("major", "")
+    if not major:
+        m = ID_PATTERNS["major"].search(text)
+        major = m.group(1) if m else ""
+    major = re.sub(r"[\s：:]+", "", major)
+
+    # ---- 入学时间 / 有效期 ----
+    enroll = _year_month(tbl.get("enroll", "")) if tbl.get("enroll") else ""
+    valid = _year_month(tbl.get("valid", "")) if tbl.get("valid") else ""
+    if not enroll:
+        m = ID_PATTERNS["enroll"].search(text)
+        if m:
+            enroll = f"{m.group(1)}-{int(m.group(2) or 9):02d}"
+    if not valid:
+        m = ID_PATTERNS["valid"].search(text)
+        if m:
+            valid = f"{m.group(1)}-{int(m.group(2) or 6):02d}"
+
+    # 证件未印入学时间时，多数高校学号前 4 位即入学年级——推测填入并明确提示人工核对
+    if not enroll and re.fullmatch(r"20\d{6,}", sid_clean):
+        y = int(sid_clean[:4])
+        if 2015 <= y <= 2035:
+            enroll = f"{y}-09"
+            warnings.append(f"证件上未印入学时间，已按学号前 4 位推测为 {y} 年 9 月，请核对")
+
     return {
         "name": name,
         "school": school,
