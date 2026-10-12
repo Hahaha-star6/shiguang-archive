@@ -70,13 +70,6 @@
   .privacy-inner { background: var(--gold-soft); border: 1px solid #E7D9A8; border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: #7A6520; display: flex; align-items: center; gap: 10px; }
   .shield { width: 20px; height: 20px; flex: none; background: var(--gold); border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 11px; font-weight: 700; }
 
-  /* 首次来访演示数据横幅 */
-  .demo-bar { max-width: 1080px; margin: 12px auto 0; padding: 0 24px; }
-  .demo-inner { background: var(--green-soft); border: 1px solid #BFD8CB; border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: var(--green); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .demo-flag { background: var(--green); color: #fff; border-radius: 6px; padding: 2px 9px; font-size: 12px; font-weight: 700; flex: none; }
-  .demo-btn { margin-left: auto; border: none; background: var(--green); color: #fff; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer; flex: none; }
-  .demo-btn:hover { opacity: .9; }
-
   .toolbar { max-width: 1080px; margin: 20px auto 0; padding: 0 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
   .chip { border: 1px solid var(--line); background: var(--paper); border-radius: 999px; padding: 6px 16px; font-size: 13px; cursor: pointer; color: var(--ink-soft); transition: all .15s; }
   .chip:hover { border-color: var(--green); color: var(--green); }
@@ -156,13 +149,13 @@
 
 <div class="identity-wrap">
   <div class="identity">
-    <div class="avatar" id="id-avatar">王</div>
+    <div class="avatar" id="id-avatar">未</div>
     <div class="info">
-      <div class="name" id="id-name">王小明</div>
-      <div class="meta" id="id-meta1">河北金融学院 · 人工智能专业 · 2024级</div>
-      <div class="meta" id="id-meta2">学号 2024****12（已脱敏） · 可在个人中心更新</div>
+      <div class="name" id="id-name">未设置</div>
+      <div class="meta" id="id-meta1">在「个人中心」填写学校与专业，或上传学生证自动识别</div>
+      <div class="meta" id="id-meta2">学号 未设置（已脱敏） · 可在个人中心更新</div>
     </div>
-    <div class="badge">已人工核对 · 身份信息来源于学生证 xParse 解析</div>
+    <div class="badge">身份信息来源于学生证 xParse 解析 · 保存时自动脱敏</div>
   </div>
 </div>
 
@@ -176,14 +169,6 @@
   <div class="privacy-inner">
     <span class="shield">护</span>
     隐私守护已开启：系统在解析环节自动检测并脱敏身份证号、手机号等敏感信息，学号等身份字段展示时同步打码，拦截记录可追溯。
-  </div>
-</div>
-
-<div class="demo-bar" id="demo-bar" style="display:none">
-  <div class="demo-inner">
-    <span class="demo-flag">示例</span>
-    <span>这里是 <b>6 张演示卡片</b>，帮你快速了解档案墙的效果。清空后上传第一张证书，就能开始建立你自己的成长档案。</span>
-    <button class="demo-btn" id="btn-demo-clear" type="button">清空演示数据，建立我的档案 →</button>
   </div>
 </div>
 
@@ -259,46 +244,19 @@
 </div>
 
 <footer>
-  本页面为参赛演示作品，卡片数据来自公开样例证书（已脱敏）。项目基于 TextIn xParse 文档解析能力构建。在线编辑的内容仅保存在本机浏览器。
+  本页面为参赛演示作品。项目基于 TextIn xParse 文档解析能力构建。在线编辑的内容仅保存在本机浏览器。
 </footer>
 
 <script>
 // ===== 数据：由 xParse 解析 + AI 结构化生成的经历卡片（含 AI 润色简历文案） =====
-const DEFAULT_CARDS = [
-  { id:"exp_001", title:"优秀志愿者", type:"荣誉证书", category:"志愿公益", org:"河北金融学院团委", date:"2025-12",
-    summary:"在2025年度青年志愿服务活动中表现突出，被评为优秀志愿者。",
-    highlights:["青年志愿服务","优秀志愿者"], confidence:"high", notes:"" },
-  { id:"exp_002", title:"大学生数学建模竞赛 省三等奖", type:"获奖证书", category:"荣誉奖项", org:"第十六届大学生数学建模竞赛组委会", date:"",
-    summary:"在第十六届大学生数学建模竞赛中，荣获河北省赛区三等奖。",
-    highlights:["学科竞赛","数学建模","省赛三等奖"], confidence:"medium", notes:"证书未注明年份，待补充" },
-  { id:"exp_003", title:"CET-4 英语四级 546分", type:"成绩证明", category:"技能证书", org:"教育部教育考试院", date:"",
-    summary:"大学英语四级总分546：听力181、阅读201、写作和翻译164。",
-    highlights:["总分546","阅读201"], confidence:"high", notes:"考试日期待补充" },
-  { id:"exp_004", title:"优秀志愿者（崇礼168越野赛）", type:"荣誉证书", category:"志愿公益", org:"共青团张家口市崇礼区委等", date:"2026-07-15",
-    summary:"在2026崇礼168超级越野赛期间积极参加城市志愿服务，表现优异，被评为优秀志愿者。",
-    highlights:["大型赛事志愿服务","双单位联合表彰"], confidence:"high", notes:"照片旋转90度，xParse自动校正" },
-  { id:"exp_005", title:"叶圣陶杯新作文大赛 省二等奖", type:"获奖证书", category:"荣誉奖项", org:"中国当代文学研究会", date:"2025-06",
-    summary:"作品《润物细无声》在第22届叶圣陶杯全国中学生新作文大赛中荣获省级二等奖。",
-    highlights:["国家级文学赛事","省级二等奖"], confidence:"high", notes:"证书链接内含身份证号，已自动脱敏" },
-  { id:"exp_006", title:"桑梓计划·返家乡社会实践", type:"服务证书", category:"实习实践", org:"张家口市委组织部、市人社局、团市委", date:"2026",
-    summary:"在桑梓计划大学生专题——2026年张家口市返家乡暑期社会实践中，圆满完成工作任务。",
-    highlights:["政务实践","三部门联合发证"], confidence:"medium", notes:"姓名已脱敏处理" }
-];
-
 const STORE_KEY = "shiguang_cards_v1";
 const CONF_LABEL = { high:"置信度高 · 无需核对", medium:"置信度中 · 建议人工确认", low:"置信度低 · 需人工核对" };
 
 let cards = [];
-let isDemo = false;   // 是否处于「首次来访演示态」：展示出厂卡片+横幅，用户保存或清空后永久退出
 try {
   const saved = localStorage.getItem(STORE_KEY);
-  if (saved !== null) {
-    cards = JSON.parse(saved) || [];   // 只要存过就忠实使用（含空数组），演示卡片不再「删光复活」
-  } else {
-    cards = DEFAULT_CARDS.map(c => ({ ...c }));
-    isDemo = true;
-  }
-} catch (e) { cards = DEFAULT_CARDS.map(c => ({ ...c })); isDemo = true; }
+  cards = saved !== null ? (JSON.parse(saved) || []) : [];   // 首次来访=空白档案，只显示用户自己上传的经历
+} catch (e) { cards = []; }
 
 let currentCat = "全部";
 let currentView = "wall";
@@ -306,14 +264,13 @@ let editingId = null;
 
 function persist() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(cards)); } catch (e) {}
-  isDemo = false;   // 用户一旦主动保存（上传/编辑/删除/清空），数据就是他自己的，演示横幅退场
 }
 function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 function renderWall() {
   const list = cards.filter(c => currentCat === "全部" || c.category === currentCat);
   const wall = document.getElementById("wall");
-  wall.innerHTML = list.map(c => `
+  const cardsHtml = list.map(c => `
     <div class="card" data-id="${esc(c.id)}">
       <div class="row-top">
         <h3>${esc(c.title)}</h3>
@@ -323,13 +280,21 @@ function renderWall() {
       <div class="org">${esc(c.org)}</div>
       <div class="date">${c.date ? esc(c.date) : "时间待补充"}</div>
       <div class="summary">${esc(c.summary)}</div>
-      <div class="hl">${(c.highlights||[]).map(h => `<span>${esc(h)}</span>`).join("")}</div>
+      ${(c.highlights||[]).length ? `<div class="hl">${(c.highlights||[]).map(h => `<span>${esc(h)}</span>`).join("")}</div>` : ""}
       <div class="conf"><b>${esc(CONF_LABEL[c.confidence] || "")}</b>${c.notes ? " · " + esc(c.notes) : ""}</div>
       <div class="actions">
         <button data-act="edit">编辑</button>
         <button data-act="del" class="del">删除</button>
       </div>
-    </div>`).join("") || `<p style="color:#6E6E66">该分类下暂无经历，点击「编辑模式」→「新增经历」即可添加。</p>`;
+    </div>`).join("");
+  // 只有筛选结果为空时才显示引导：无任何卡片→首传引导；有卡片但本分类为空→换分类引导
+  const emptyHtml = !cards.length
+    ? `<div class="empty-wall" style="grid-column:1/-1;text-align:center;padding:60px 20px;color:#6E6E66">
+         <p style="font-size:16px;font-weight:700;color:#2B2B28;margin-bottom:6px">档案墙还是空的</p>
+         <p style="font-size:13px">点击上方「＋ 上传证书照片 · 自动识别」，上传第一张证书，开始建立你的成长档案。</p>
+       </div>`
+    : `<p class="empty-wall" style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#6E6E66;font-size:13px">该分类下暂无经历，换一个分类试试，或上传新证书。</p>`;
+  wall.innerHTML = cardsHtml || emptyHtml;
 }
 
 function renderTimeline() {
@@ -354,16 +319,7 @@ function update() {
   document.getElementById("timeline").style.display = currentView === "tl" ? "block" : "none";
   document.getElementById("btn-wall").classList.toggle("active", currentView === "wall");
   document.getElementById("btn-tl").classList.toggle("active", currentView === "tl");
-  document.getElementById("demo-bar").style.display = isDemo ? "block" : "none";
 }
-
-// 一键清空演示数据：写入空数组并永久退出演示态（刷新后仍是空墙，示例不再复活）
-document.getElementById("btn-demo-clear").addEventListener("click", () => {
-  if (!confirm("确定清空全部 6 张演示卡片吗？\n清空后这里就是你的专属档案墙——上传第一张证书即可开始。")) return;
-  cards = [];
-  persist();
-  update();
-});
 
 // 分类筛选
 document.querySelectorAll(".chip[data-cat]").forEach(chip => {
@@ -462,18 +418,25 @@ update();
 
 // ===== 身份卡（与「个人中心」共享 key: shiguang_profile_v1） =====
 const DEFAULT_ID = {
-  name: "王小明", school: "河北金融学院", major: "人工智能",
-  student_id: "2024****12", enroll: "2024-09", valid_until: "2028-06"
+  name: "", school: "", major: "",
+  student_id: "", enroll: "", valid_until: ""
 };
 let idp = { ...DEFAULT_ID };
 try {
   const s = localStorage.getItem("shiguang_profile_v1");
   if (s) idp = { ...DEFAULT_ID, ...JSON.parse(s) };
 } catch (e) {}
-document.getElementById("id-avatar").textContent = (idp.name || "同").slice(0, 1);
+// 个人照片（与个人中心/简历共用 shiguang_photo_v1）：有照片时身份卡头像显示照片
+let idPhoto = "";
+try { idPhoto = localStorage.getItem("shiguang_photo_v1") || ""; } catch (e) {}
+const idAvatar = document.getElementById("id-avatar");
+if (idPhoto) { idAvatar.innerHTML = `<img src="${idPhoto}" alt="个人照片" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block">`; }
+else { idAvatar.textContent = (idp.name || "未").slice(0, 1); }
 document.getElementById("id-name").textContent = idp.name || "未设置";
 document.getElementById("id-meta1").textContent =
-  (idp.school || "未设置学校") + " · " + (idp.major || "") + "专业 · " + ((idp.enroll || "20XX").slice(0, 4)) + "级";
+  (idp.school || idp.major)
+    ? (idp.school || "未设置学校") + " · " + (idp.major || "") + "专业 · " + ((idp.enroll || "20XX").slice(0, 4)) + "级"
+    : "在「个人中心」填写学校与专业，或上传学生证自动识别";
 document.getElementById("id-meta2").textContent =
   "学号 " + (idp.student_id || "未设置") + "（已脱敏） · 可在个人中心更新";
 
@@ -577,7 +540,7 @@ document.getElementById("btn-confirm-card").addEventListener("click", () => {
     date: d.date,
     org: d.org || "",
     summary: d.summary,
-    highlights: (d.highlights && d.highlights.length ? d.highlights : d.mask_hits.slice(0, 3)),
+    highlights: d.highlights || [],   // 亮点只来自证书内容提炼；脱敏信息已在下方「X处已打码」体现，不占亮点位
     confidence: d.mask_count > 0 || !d.date ? "medium" : "high",
     photo: d.photo || "",
     notes: "由网页上传识别生成（xParse 解析 + 自动脱敏" + (d.mask_count ? "，" + d.mask_count + " 处已打码" : "") + "）"

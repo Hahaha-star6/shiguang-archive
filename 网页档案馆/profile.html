@@ -32,6 +32,17 @@
   .id-card .name { font-size: 20px; font-weight: 800; }
   .id-card .meta { font-size: 13px; color: var(--ink-soft); margin-top: 3px; }
   .id-card .shield-tag { margin-left: auto; font-size: 12px; color: var(--green); background: var(--green-soft); border-radius: 999px; padding: 5px 12px; font-weight: 600; flex: none; }
+  .avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+
+  /* 个人照片（证件照）上传框：与简历工作台共用同一份照片数据 */
+  .photo-row { display: flex; align-items: center; gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); flex-wrap: wrap; }
+  .photo-box { position: relative; width: 90px; height: 120px; flex: none; border: 1.5px dashed #B9C8D8; border-radius: 8px; background: #F7FAFC; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #8FA6BC; font-size: 12px; cursor: pointer; overflow: hidden; }
+  .photo-box:hover { border-color: var(--green); color: var(--green); }
+  .photo-box img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .photo-box .x { position: absolute; top: 4px; right: 4px; width: 18px; height: 18px; line-height: 16px; text-align: center; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; font-size: 12px; cursor: pointer; }
+  .photo-box .x:hover { background: #B23A2E; }
+  .photo-row .photo-tip { font-size: 13px; color: var(--ink-soft); max-width: 360px; line-height: 1.7; }
+  .photo-row .photo-tip b { color: var(--green); }
 
   .btn-primary { background: var(--green); color: #fff; border: none; border-radius: 10px; padding: 11px 22px; font-size: 14px; font-weight: 700; cursor: pointer; }
   .btn-primary:hover { opacity: .92; }
@@ -107,13 +118,19 @@
   <section class="panel">
     <h2>我的身份卡</h2>
     <div class="id-card">
-      <div class="avatar" id="p-avatar">王</div>
+      <div class="avatar" id="p-avatar">未</div>
       <div>
-        <div class="name" id="p-name">王小明</div>
-        <div class="meta" id="p-meta">河北金融学院 · 人工智能 · 2024级</div>
-        <div class="meta" id="p-sid">学号 2024****12（已脱敏）</div>
+        <div class="name" id="p-name">未设置</div>
+        <div class="meta" id="p-meta">在下方填写学校与专业，或上传学生证自动识别</div>
+        <div class="meta" id="p-sid">学号 未设置（已脱敏）</div>
       </div>
       <div class="shield-tag">学号已脱敏展示</div>
+    </div>
+    <div class="photo-row">
+      <div class="photo-box" id="photo-box" title="点击上传个人照片">＋<span>个人照片</span></div>
+      <div class="photo-tip">
+        上传一张<b>证件照或个人头像</b>（建议正面、纯色背景）。照片会自动裁剪压缩、仅保存在本机，<b>生成简历时自动补充到简历右上角</b>；在简历工作台也可以随时更换。
+      </div>
     </div>
   </section>
 
@@ -133,7 +150,7 @@
     <h2>编辑个人信息</h2>
     <p class="hint">以下信息与档案馆首页、简历工作台自动同步（仅保存在本机浏览器）。</p>
     <div class="form-grid">
-      <div><label>姓名</label><input id="f-name" placeholder="如：王小明"></div>
+      <div><label>姓名</label><input id="f-name" placeholder="请输入姓名"></div>
       <div><label>学校</label><input id="f-school" placeholder="如：河北金融学院"></div>
       <div><label>专业</label><input id="f-major" placeholder="如：人工智能"></div>
       <div><label>学号</label><input id="f-sid" placeholder="保存时自动打码"></div>
@@ -169,6 +186,7 @@
 <footer>拾光档案 · 身份信息仅保存在本机浏览器（localStorage），不会上传至任何服务器。</footer>
 
 <input type="file" id="file-input" accept="image/*" style="display:none">
+<input type="file" id="photo-input" accept="image/*" style="display:none">
 
 <!-- 识别中 -->
 <div class="overlay" id="processing">
@@ -231,10 +249,14 @@ function maskSid(s) {
 }
 
 function render() {
-  document.getElementById("p-avatar").textContent = (idp.name || "同").slice(0, 1);
+  const avatar = document.getElementById("p-avatar");
+  if (photo) { avatar.innerHTML = `<img src="${photo}" alt="个人照片">`; }
+  else { avatar.textContent = (idp.name || "未").slice(0, 1); }
   document.getElementById("p-name").textContent = idp.name || "未设置";
   document.getElementById("p-meta").textContent =
-    (idp.school || "未设置学校") + " · " + (idp.major || "") + " · " + ((idp.enroll || "20XX").slice(0, 4)) + "级";
+    (idp.school || idp.major)
+      ? (idp.school || "未设置学校") + " · " + (idp.major || "") + " · " + ((idp.enroll || "20XX").slice(0, 4)) + "级"
+      : "在下方填写学校与专业，或上传学生证自动识别";
   document.getElementById("p-sid").textContent = "学号 " + (idp.student_id || "未设置") + "（已脱敏）";
   const fill = (id, v) => { document.getElementById(id).value = v || ""; };
   fill("f-name", idp.name); fill("f-school", idp.school); fill("f-major", idp.major);
@@ -244,7 +266,58 @@ function render() {
   fill("f-gpa", idp.gpa); fill("f-courses", idp.courses); fill("f-self", idp.self);
   renderCustoms();
   renderEdus();
+  renderPhoto();
 }
+
+// ===== 个人照片：与简历工作台共用 shiguang_photo_v1，上传即时生效（无需点保存信息） =====
+const PHOTO_KEY = "shiguang_photo_v1";
+let photo = "";
+try { photo = localStorage.getItem(PHOTO_KEY) || ""; } catch (e) {}
+function renderPhoto() {
+  const box = document.getElementById("photo-box");
+  box.innerHTML = photo
+    ? `<img src="${photo}" alt="个人照片"><span class="x" id="photo-del" title="移除照片">×</span>`
+    : `＋<span>个人照片</span>`;
+}
+document.getElementById("photo-box").addEventListener("click", e => {
+  if (e.target.closest("#photo-del")) {
+    e.stopPropagation();
+    photo = "";
+    try { localStorage.removeItem(PHOTO_KEY); } catch (err) {}
+    render();
+    return;
+  }
+  document.getElementById("photo-input").click();
+});
+document.getElementById("photo-input").addEventListener("change", e => {
+  const f = e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const W = 180, H = 240;   // 与简历工作台一致：证件照比例、居中裁剪、压缩体积
+      const c = document.createElement("canvas");
+      c.width = W; c.height = H;
+      const ctx = c.getContext("2d");
+      const k = Math.max(W / img.width, H / img.height);
+      const w = img.width * k, h = img.height * k;
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, W, H);
+      ctx.drawImage(img, (W - w) / 2, (H - h) / 2, w, h);
+      photo = c.toDataURL("image/jpeg", 0.85);
+      try { localStorage.setItem(PHOTO_KEY, photo); } catch (err) {
+        alert("照片保存失败：浏览器本地存储空间不足，请换一张更小的照片。");
+        return;
+      }
+      render();
+    };
+    img.onerror = () => alert("图片读取失败，请换一张清晰的照片（jpg/png）。");
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(f);
+});
 
 // 自定义字段列表
 function renderCustoms() {

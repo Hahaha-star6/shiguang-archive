@@ -56,6 +56,7 @@ def looks_like_media(body: bytes, suffix: str) -> bool:
 # 第一轮看「内容强信号」（证书讲的是什么事），第二轮才看落款组织词（团委/学生会），
 # 避免志愿者证书因落款"河北金融学院团委"被误判成「组织经历」
 CAT_STRONG = [
+    (["学生证", "校园卡", "借书证", "准考证", "在读证明", "学籍"], "技能证书"),  # 证件类（正常走学生证专用接口；误入证书入口时也不能判成荣誉）
     (["志愿", "公益"], "志愿公益"),
     (["实践", "实习", "见习"], "实习实践"),
     (["四级", "六级", "CET", "普通话", "资格", "从业", "会计", "驾驶证", "计算机等级"], "技能证书"),
@@ -70,6 +71,7 @@ CAT_ORG = [
 DATE_RES = [
     re.compile(r"(20\d{2})年(\d{1,2})月(?:\d{1,2}[日号])?"),  # 2025年9月 / 2025年9月15日
     re.compile(r"(20\d{2})[-./](\d{1,2})(?![\d-])"),          # 2025-09 / 2025.9
+    re.compile(r"(20\d{2})年(十[一二两]?|[一二三四五六七八九])月(?:[\d一二三四五六七八九十两]+[日号])?"),  # 2026年七月（阿拉伯年+中文月）
 ]
 CN_NUM = {"〇": "0", "零": "0", "0": "0", "O": "0", "o": "0", "一": "1", "二": "2", "两": "2",
           "三": "3", "四": "4", "五": "5", "六": "6", "七": "7",
@@ -106,7 +108,9 @@ def guess_category(text):
 GENERIC_TITLES = {
     "荣誉证书", "获奖证书", "荣誉称号证书", "聘书", "聘用证书", "结业证书",
     "毕业证书", "学位证书", "资格证书", "成绩报告单", "成绩单",
-    "服务证书", "社会实践证书",
+    "服务证书", "社会实践证书", "实习证明", "实践证明", "接收证明", "实习接收证明",
+    "实习单位接收证明", "单位接收证明",
+    "在职证明", "工作证明", "证明",
 }
 GENERIC_TITLES_EN = {"HONORARY CREDENTIAL", "CERTIFICATE", "CERTIFICATE OF HONOR", "DIPLOMA"}
 # 网页截图里的导航噪声（整行或以这些词开头都算）
@@ -120,6 +124,11 @@ AWARD_PATTERNS = [
     re.compile(r"担任(.+?)[，,。.]?任期"),
     re.compile(r"聘请[\u4e00-\u9fa5]{2,4}(?:同学|同志|先生|女士)?担任(.+?)[，,。.]"),
 ]
+# 实习/见习证明：「在北京腾讯有限公司实习」→ 单位 + 实习（这类证书没有奖项句式）
+INTERNSHIP_ORG_RE = re.compile(
+    r"在([\u4e00-\u9fa5（）()A-Za-z0-9]{4,30}?(?:有限公司|股份有限公司|集团|银行|支行|分行|证券|保险|"
+    r"事务所|研究院|研究所|医院|局|中心|委员会|事业单位|政府))[^。；;]{0,10}?(?:实习|见习|实践)"
+)
 FIELD_WORDS = (
     r"姓\s*名|性\s*别|证件号码|证书编号|成绩报告单编号|准考证号|考试级别|取得时间|"
     r"校发机构|颁发机构|发证机关|学\s*校|专\s*业|学\s*号|入学年份|有效期至"
@@ -128,15 +137,28 @@ FIELD_WORDS = (
 FIELD_LABEL_ONLY = re.compile(r"^(?:" + FIELD_WORDS + r")[：:]?$")
 # 标签带值行（如「证书编号：2024KJ0012345」）——不当标题，但摘要里保留
 FIELD_WITH_VALUE = re.compile(r"^(?:" + FIELD_WORDS + r")[：:].+$")
-PERSON_LINE = re.compile(r"^[\u4e00-\u9fa5]{2,4}(同学|同志|先生|女士)?[：:]$")
+PERSON_LINE = re.compile(r"^[\u4e00-\u9fa5]{2,4}\s*(同学|同志|先生|女士)[：:]?$")
 # 带引号的项目名（如“桑梓计划”“返家乡”），拼成「大项目·子项目」做标题兜底
 QUOTE_PATTERN = re.compile(r"[“「『\"]([\u4e00-\u9fa5][\u4e00-\u9fa5·\-0-9]{1,20})[”」』\"]")
 # 引号后可补全的项目类型词（“返家乡”暑期社会实践 → 标题补出「社会实践」）
 TITLE_SUFFIX_PATTERN = re.compile(r"[”」』\"][\u4e00-\u9fa5]{0,6}?(社会实践|志愿服务|志愿活动|竞赛|大赛|大学生专题)")
+# 纯奖项等级（如「省级二等奖」「金奖」「第三名」）：只有等级没有赛事名时，标题要回头补赛事名
+AWARD_LEVEL_RE = re.compile(r"(?:特等|一|二|三)等奖|金奖|银奖|铜奖|优胜奖|优秀奖|第[一二三四五六七八九十百\d]+名|冠军|亚军|季军|[一二三]等功")
+EVENT_NAME_NOISE = ("杯", "大赛", "竞赛", "杯赛", "锦标赛", "邀请赛", "计划", "工程", "称号", "之星")
+# 引号项目名 + 其后的赛事类型短语：「“叶圣陶杯”全国中学生新作文大赛」→ 叶圣陶杯 + 全国中学生新作文大赛
+EVENT_QUOTE_RE = re.compile(r"[“「『\"]([\u4e00-\u9fa5][\u4e00-\u9fa5·\-0-9]{1,11})[”」』\"][^。；;]{0,14}?([\u4e00-\u9fa5]{2,14}?(?:大赛|杯赛|竞赛|锦标赛|邀请赛|公开赛))?")
+# 无引号时：「第22届/第十六届XX大赛」（届数兼容中文数字）
+EVENT_NUM_RE = re.compile(r"第\s*[\d一二三四五六七八九十百零〇两]+\s*届[^。；;]{0,16}?([\u4e00-\u9fa5]{2,16}?(?:大赛|杯赛|竞赛|锦标赛|邀请赛|公开赛))")
+# 证书编号里的年份兜底（落款年份常被印章压住），如注释里的 YSTB20251674A8470
+CERT_NO_YEAR_RE = re.compile(r"[A-Z]{3,}[A-Z0-9]*?(20\d{2})\d{3,}[A-Z0-9]*")
+# 残缺落款日期：年份被印章吃掉只剩「五年六月」这类
+BROKEN_DATE_RE = re.compile(r"(?<![0-9〇零一二三四五六七八九两])([一二三四五六七八两])年([一二三四五六七八九十]{1,3})月")
 
 # ---------- 颁发单位（org）提取 ----------
 # 「颁发单位：XXX」这类字段标签
-ORG_FIELD = re.compile(r"(?:颁发单位|校发机构|发证机关|颁发机构|发证单位|授予单位|院校)[：:]\s*([^\s，,。；;]{2,40})")
+ORG_FIELD = re.compile(r"(?:主办单位|承办单位|主办|实习单位|实践单位|接收单位|颁发单位|校发机构|发证机关|颁发机构|发证单位|授予单位|院校)[：:]\s*([^\s，,。；;]{2,40})")
+# 「XX大学 校章 / XX单位（公章）」：机构名后跟印章字样（证书落款常见）
+ORG_SEAL_RE = re.compile(r"([A-Za-z\u4e00-\u9fa5]{2,30}(?:大学|学院|学校|银行|支行|分行|公司|委员会|局|中心|医院|研究院|研究所))\s*(?:校章|公章|印章|专用章|财务章|\(盖章\)|（盖章）)")
 # 以机构后缀结尾的落款行（如 中共张家口市委组织部 / 河北金融学院团委 / 校团委学生会）
 ORG_LINE = re.compile(
     r"^[\u4e00-\u9fa5]{2,30}?(?:人力资源和社会保障局|组织部|宣传部|办公室|财政局|教育局|委员会|"
@@ -166,6 +188,10 @@ OCR_FIX = {
     "长家口市": "张家口市",
     "接长": "校长",      # 书法体「校长」常被误读为「接长」（如：校长奖学金证书）
     "授子": "授予",      # 「兹授予」的「予」常被误读为「子」
+    "授于": "授予",      # 「兹授于」的「于」为「予」的形近误读/不规范写法
+    "交业单位": "实习单位",  # 实习接收证明里「实习单位」常被误读为「交业单位」
+    "GET-4": "CET-4",    # 四级成绩单标题 CET 被误读为 GET
+    "GET-6": "CET-6",
 }
 
 
@@ -181,14 +207,26 @@ def clean_md(text, keep_comments=False):
     else:
         t = re.sub(r"<!--[\s\S]*?-->", "\n", t)          # 默认按噪声处理
     t = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", t)            # 内嵌图片链接
+    # xParse 成绩单常返回 HTML <table>：标签全部去掉（换成空格），单元格里的文字保留，
+    # 否则 <table>/<td> 会混进摘要，「总分600」这类字段也无法提取
+    t = re.sub(r"<br\s*/?>", "\n", t, flags=re.I)
+    t = re.sub(r"</(?:tr|p|div|td|th)>", " ", t, flags=re.I)
+    t = re.sub(r"<[^>]+>", " ", t)
     t = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", t)        # 普通链接只留文字
     t = re.sub(r"^\s{0,3}#{1,6}\s*", "", t, flags=re.M)   # 标题井号
-    t = t.replace("**", "").replace("`", "").replace("☒", "")
+    t = t.replace("**", "").replace("`", "").replace("☒", "").replace("＊", "")
     t = t.replace("&gt;", ">").replace("&lt;", "<").replace("&amp;", "&")
     t = re.sub(r"(姓)[ \t　]+(名)", r"\1\2", t)           # OCR 常把「姓名」拆成「姓 名」
     t = re.sub(r"\$[ \t\-0-9]*\$?", " ", t)               # OCR 表格噪声，如「-3 $-3-$」
     t = re.sub(r"[ \t　]+-?\d{1,3}[ \t　]+(?=[\u4e00-\u9fa5])", " ", t)  # 中文前的孤立数字噪声
     t = re.sub(r"(?<=[\u4e00-\u9fa5])[ \t　]+(?=[\u4e00-\u9fa5])", "", t)  # 接合同行内被 OCR 拆开的中文词
+    t = re.sub(r"([《【「『])[ \t　]+", r"\1", t)   # 书名号/括号内首空格（OCR 常插在《 润物细无声 》里）
+    t = re.sub(r"[ \t　]+([》】」』])", r"\1", t)
+    # 中文年份里的字母 O：「二O二四年」→「2024年」（〇被误读成 O/o，完整匹配四个年份字位）
+    t = re.sub(r"[二2][Oo〇零0]([一二三四五六七八九两])([一二三四五六七八九两])",
+               lambda m: "20" + CN_NUM.get(m.group(1), m.group(1)) + CN_NUM.get(m.group(2), m.group(2)), t)
+    # OCR 叠词：「XX大学学校…」→「XX大学…」
+    t = re.sub(r"(大学|学院|学校)学校", r"\1", t)
     t = re.sub(r"[ \t　]+", " ", t)
     out = []
     for l in (x.strip() for x in t.splitlines()):
@@ -235,16 +273,44 @@ def _strip_lead_noise(l):
     return l.strip(" ：:·-—")
 
 
+def guess_event_name(flat):
+    """从全文提取赛事全名：优先「引号项目名+赛事短语」，其次「第N届XX大赛」"""
+    m = EVENT_QUOTE_RE.search(flat)
+    if m:
+        q = m.group(1)
+        phrase = re.sub(r"^(?:全国|中国|全省|全市|国家)", "", m.group(2) or "")
+        name = q if (not phrase or q in phrase or phrase in q) else q + phrase
+        return name
+    m2 = EVENT_NUM_RE.search(flat)
+    return m2.group(1) if m2 else ""
+
+
 def guess_title(text):
     clean = clean_best(text)
     # ① 优先从「被评为/荣获/担任…」句式里抽真正的奖项名或职务名
     #    在去掉全部空白的全文上匹配，OCR 把一句话断成两三行也能命中
     flat = re.sub(r"\s+", "", clean)
+    # ⓪ 实习/见习证明：标题直接取「单位 + 实习」
+    im = INTERNSHIP_ORG_RE.search(flat)
+    intern_org = im.group(1) if im else ""
+    if intern_org:
+        return (intern_org + "实习")[:24]
+    # 实习证明走「实习单位：X」字段时，标题 = 单位 + 实习（guess_org 同源逻辑）
+    om = ORG_FIELD.search(clean)
+    if not im and ("实习" in flat or "见习" in flat or "实践" in flat) and om:
+        val = om.group(1).strip()
+        if re.search(r"公司|银行|支行|分行|证券|保险|事务所|研究院|医院|局|中心|集团|事务所", val):
+            return (val + "实习")[:24]
     for pat in AWARD_PATTERNS:
         m = pat.search(flat)
         if m:
             cand = m.group(1).strip(" 「『【\"“”’」』】】.。，,、")
             if 2 <= len(cand) <= 24:
+                # 只抽到奖项等级（如「省级二等奖」）时，回头补上赛事名，避免标题丢失赛事
+                if AWARD_LEVEL_RE.search(cand) and not any(w in cand for w in EVENT_NAME_NOISE):
+                    ev = guess_event_name(flat)
+                    if ev and ev not in cand:
+                        return (ev + " " + cand)[:24]
                 return cand
     # ② 再收带引号的项目名（如“桑梓计划”“返家乡”），拼成「项目·子项」，并尝试补全类型词
     qs = QUOTE_PATTERN.findall(flat)
@@ -258,12 +324,19 @@ def guess_title(text):
                 if len(joined) + len(tail.group(1)) <= 24:
                     return joined + tail.group(1)
             return joined[:24]
-    # ③ 逐行找第一个有实质内容的行（跳过门面泛称、人名、字段标签、网页导航）
+    # ③ 逐行找第一个有实质内容的行（跳过门面泛称、人名、字段标签、网页导航、致送称谓机构行）
     for l in clean.splitlines():
+        if looks_org(l.strip(" ：: ")):
+            continue   # 「河北金融学院：」这类致送机构行不能当标题
         l = l.strip(" ：:·-—")
         if len(l) < 4 or _is_noise_line(l):
             continue
         l = _strip_lead_noise(l)
+        # 去掉行内/行尾的英文全称说明（注释解析时常把整证书挤成一行：
+        # 「合格证书 National Computer Rank...(NCRE) 姓名：张三 准考证号：…」）
+        l = re.sub(r"\s+[A-Za-z][A-Za-z\s().,&\-]{15,}", " ", l)
+        # 英文说明后常紧跟字段，标题只取第一个字段标签之前的部分
+        l = re.split(r"(?:姓\s*名|准考证号|证书编号|证件号码|考试级别|考试成绩|考试时间|批准文号|备案号)[：:]", l, 1)[0].strip()
         if len(l) < 4:
             continue
         return l[:24]
@@ -271,17 +344,35 @@ def guess_title(text):
 
 
 def guess_org(text):
-    """颁发单位：优先「颁发单位：XXX」字段，其次收集文末的机构落款行（去掉机构代码等尾巴），用「、」连接"""
+    """颁发单位：优先「主办/实习/颁发单位：XXX」字段，其次「XX大学 校章」印章行，
+    最后收集文末的机构落款行，用「、」连接"""
     clean = clean_best(text)
     m = ORG_FIELD.search(clean)
     primary = m.group(1).strip() if m else ""
+    # 字段没抓到时，认「XX大学 校章 / XX支行（公章）」这类带印章字样的落款
+    if not primary:
+        sm = ORG_SEAL_RE.search(clean)
+        if sm:
+            primary = sm.group(1).strip()
     orgs = []
-    for l in clean.splitlines():
-        l = re.sub(r"\s*[0-9]{6,}\s*$", "", l).strip(" ：: ")
+    for raw_l in clean.splitlines():
+        is_addressee = bool(re.match(r"^[\u4e00-\u9fa5]{2,30}(?:大学|学院|学校|委员会|局|中心)\s*[：:]\s*$", raw_l.strip()))
+        l = re.sub(r"\s*[0-9]{6,}\s*$", "", raw_l).strip(" ：: ")
+        seal_m = ORG_SEAL_RE.search(l)
+        if seal_m:
+            l = seal_m.group(1).strip()   # 「XX大学 校章」→ 只留机构名参与后续去重
+            is_addressee = False
         if not looks_org(l):
+            continue
+        # 正文开头的致送称谓（如实习证明抬头「河北金融学院：」）不是颁发单位；
+        # 除非它本身就是字段/印章抓到的主单位
+        if is_addressee and primary and l != primary and l not in primary:
             continue
         # 学位证书里「学位评定委员会」隶属于大学（院校字段已作为主单位），不再重复列出
         if primary and l == "学位评定委员会":
+            continue
+        # 有明确「主办单位：X」字段时，文末「XX大赛组委会/评委会」只是执行机构，不再并列
+        if primary and re.search(r"(?:组委会|评委会|组织委员会)$", l) and not any(w in primary for w in ("组委会", "评委会")):
             continue
         if primary and (primary in l or l in primary):
             continue   # 与字段值近似重复（如「燕京理工大学」vs「燕京理工大学教务处」）
@@ -289,43 +380,163 @@ def guess_org(text):
             orgs.append(l)
     if primary and primary not in orgs:
         orgs.insert(0, primary)
+    if not orgs:
+        # 既无字段也无落款时，从「在北京腾讯有限公司实习」正文句式里兜底取单位
+        im2 = INTERNSHIP_ORG_RE.search(re.sub(r"\s+", "", clean))
+        if im2:
+            orgs.append(im2.group(1))
     return "、".join(orgs)
 
 
+# 亮点：赛事规格（全国/中国/国家 开头的赛事，按题材归类）
+_NATIONAL_EVT_RE = re.compile(r"(?:全国|中国|国家|国际)[\u4e00-\u9fa5A-Za-z0-9]{0,14}?(?:大赛|竞赛|杯赛|锦标赛|邀请赛|公开赛|比赛)")
+_EVT_TYPE_MAP = (
+    (("作文", "写作", "文学", "征文"), "文学"),
+    (("英语", "外语", "日语", "口语"), "外语"),
+    (("数学", "建模", "物理", "化学", "生物", "信息学", "程序", "计算机", "机器人", "人工智能"), "学科"),
+    (("演讲", "辩论", "朗诵", "主持"), "语言"),
+    (("创新", "创业", "互联网"), "创新创业"),
+    (("科技", "科学"), "科技"),
+    (("艺术", "音乐", "舞蹈", "美术", "书画", "设计"), "艺术"),
+    (("体育", "运动", "田径", "球类"), "体育"),
+    (("职业", "技能", "职业技能"), "职业技能"),
+)
+# 亮点：奖项等级（在去空白全文里找「XX等奖/金银奖」，前面的行政级别标准化）
+def _award_level_tag(flat):
+    m = re.search(r"(.{0,6}?)(金奖|银奖|铜奖|特等|一等|二等|三等|优胜|优秀)奖", flat)
+    if not m:
+        return ""
+    pre, core = m.group(1), m.group(2)
+    if "全国" in pre or "国家" in pre or "国际" in pre or "国赛" in pre:
+        lvl = "国家级"
+    elif "省" in pre:
+        lvl = "省级"
+    elif "市" in pre:
+        lvl = "市级"
+    elif "区" in pre or "县" in pre:
+        lvl = "区级"
+    elif "校" in pre:
+        lvl = "校级"
+    else:
+        lvl = ""
+    return lvl + core + "奖"
+
+
 def guess_highlights(category, org, text):
-    """从分类/颁发单位推导「亮点」标签（如 政务实践 / 三部门联合发证 / 志愿服务）"""
+    """从证书内容提炼「亮点」标签：机构性质（政务/联合/志愿）、赛事规格、
+    学科类型、奖项等级、考试分数等——只写证书本身的亮点，不写脱敏等系统处理信息。"""
+    flat = re.sub(r"\s+", "", text)
     orgs = [o for o in re.split(r"[、，,]", org) if o.strip()]
     hs = []
-    if category in ("实习实践", "组织经历") and any(
-        w in o for o in orgs for w in ("组织部", "政府", "局", "委员会", "党委", "团委")
+
+    def add(tag):
+        if tag and tag not in hs:
+            hs.append(tag)
+
+    # ① 机构性质类
+    # 政务实践：仅「实习实践」类且发证方为党政机关（组织部/政府/局/党委等）；
+    # 团委、学生会颁发的校内聘书/志愿证明不属于政务实践，不贴此标签
+    if category == "实习实践" and any(
+        w in o for o in orgs for w in ("组织部", "政府", "局", "委员会", "党委", "人社局", "人力资源和社会保障")
     ):
-        hs.append("政务实践")
+        add("政务实践")
     n = len(orgs)
     if n == 2:
-        hs.append("双单位联合颁发")
+        add("双单位联合颁发")
     elif n == 3:
-        hs.append("三部门联合发证")
+        add("三部门联合发证")
     elif n > 3:
-        hs.append("多部门联合发证")
+        add("多部门联合发证")
     if "志愿" in text:
-        hs.append("志愿服务")
-    if category == "荣誉奖项" and any(w in text for w in ("三好", "标兵", "优秀")):
-        hs.append("校级表彰" if any(w in o for o in orgs for w in ("学院", "大学", "学校")) else "表彰荣誉")
+        add("志愿服务")
+    # 金融机构实习（银行/证券/保险等接收的实习证明）
+    if category == "实习实践" and re.search(r"银行|证券|保险|信用社|金融", flat) and re.search(r"实习|见习|实践", flat):
+        add("金融机构实习")
+
+    # ② 赛事规格与学科类型（如「全国中学生新作文大赛」→ 国家级文学赛事）
+    em = _NATIONAL_EVT_RE.search(flat)
+    if em:
+        seg = em.group(0)
+        etype = ""
+        for kws, label in _EVT_TYPE_MAP:
+            if any(k in seg for k in kws):
+                etype = label
+                break
+        add("国家级" + etype + "赛事" if etype else "国家级赛事")
+    if re.search(r"数学建模|建模竞赛", flat):
+        add("学科竞赛")
+        add("数学建模")
+    elif re.search(r"(数学|物理|化学|生物|信息学|程序设计|计算机|机器人)[\u4e00-\u9fa5]{0,6}(?:大赛|竞赛|联赛|奥赛)", flat) and "国家级" + "学科" + "赛事" not in hs:
+        add("学科竞赛")
+
+    # ③ 奖项等级（省级二等奖 / 金奖 …）
+    add(_award_level_tag(flat))
+
+    # ④ 表彰称号（三好学生/标兵等非等级制荣誉）
+    if category == "荣誉奖项" and re.search(r"三好|标兵|优秀学生|优秀毕业生", flat):
+        add("校级表彰" if any(w in o for o in orgs for w in ("学院", "大学", "学校")) else "表彰荣誉")
+
+    # ⑤ 考试分数（四六级/成绩单：总分546、阅读201）
+    m = re.search(r"总分[:：]?\s*(\d{2,3})(?!\d)", flat)
+    if m:
+        add("总分" + m.group(1))
+    m = re.search(r"阅读[:：]?\s*(\d{2,3})(?!\d)", flat)
+    if m and int(m.group(1)) >= 180:
+        add("阅读" + m.group(1))
+
     return hs[:3]
 
 
-def guess_summary(text, limit=80):
+def guess_summary(text, limit=80, title=""):
     """摘要：只保留正文叙述句——去掉门面套话、持证人行、颁发单位行与纯日期行（它们已单独成字段），
-    去掉引号装饰与「你在…」这类招呼语，按句号自然截断"""
+    去掉引号装饰与「你在…」这类招呼语，按句号自然截断。title 用于剔除与标题重复的抬头行。"""
     clean = clean_best(text)
+    # 标题核心词（去行政级别前缀），用于识别「三好学生」这种独占一行的短抬头
+    title_core = re.sub(r"^(?:校级|院级|省级|市级|区级|国家级|全国)", "", title or "")
     lines = []
     for l in clean.splitlines():
+        # 英文全称说明（National Computer Rank Examination(NCRE) 等）整段删除，短英文缩写保留
+        l = re.sub(r"\s+[A-Za-z][A-Za-z\s().,&\-]{15,}", " ", l)
         l2 = re.sub(r"(?<=[\u4e00-\u9fa5])\s*[0-9]{6,}\s*$", "", _strip_lead_noise(l)).strip()  # 中文机构名后的代码尾巴（不动证书编号）
+        # 行尾印章落款碎片：「教育部教育考试院成绩专用章」「XX校章（及章旁 OCR 残字）」整尾去掉
+        l2 = re.sub(r"[A-Za-z\u4e00-\u9fa5]{0,20}(?:校章|公章|财务章|专用章|成绩专用章|印章)[A-Za-z\u4e00-\u9fa5]{0,8}$", "", l2).strip()
         if len(l2) < 2 or _is_noise_line(l, for_summary=True):
             continue
         if COURTESY_RE.match(l2) or HOLDER_RE.match(l2):
             continue
         if looks_org(l2) or ORG_FIELD.search(l2) or DATE_ONLY_RE.match(l2):
+            continue
+        # 标题抬头行：短、无句读、且与标题重合（如三好证书首行「三好学生」、各证书首行重复标题）
+        if len(l2) <= 14 and not re.search(r"[，,。；;：:]", l2) and title_core and (
+            l2 in title_core or title_core in l2
+        ):
+            continue
+        # 校长/院长签发落款行（如「XX大学校长长：」「校长：李伟」）与印章碎片行
+        if re.search(r"(?:校长|院长|主任|负责人)\s*[：:]?", l2) and len(l2) <= 14:
+            continue
+        if re.fullmatch(r"[\u4e00-\u9fa5A-Za-z0-9]{0,8}(?:校章|公章|印章|专用章|财务章|盖章)[\u4e00-\u9fa5A-Za-z0-9]{0,4}", l2):
+            continue
+        # 纯「以资鼓励 / 表彰优异表现」类嘉奖短语行
+        if re.fullmatch(r"(?:特[颁发]此证[，,]?\s*)?(?:以资鼓励(?:[·.，,]\s*表彰[\u4e00-\u9fa5]{0,10})?|特此证明[。.]?|表彰[\u4e00-\u9fa5]{0,10})", l2):
+            continue
+        # 纯人名行（校长签名等，2-4 个汉字、无任何其他内容）
+        if re.fullmatch(r"[\u4e00-\u9fa5]{2,4}", l2):
+            continue
+        # 孤立数字碎片（印章旁的电话/编号残片，如「8288756」）；完整「标签：编号」行不受影响
+        if re.fullmatch(r"\d{2,10}", l2):
+            continue
+        # 证书版式噪声：批准/备案文号、扫码查询、「不作为招生入学依据」免责声明
+        if re.search(r"批准文号|备案号|核准号|批文号", l2):
+            continue
+        if l2.startswith("扫码") or "不作为" in l2 and "依据" in l2:
+            continue
+        # 纯赛事抬头行（如「全国中学生新作文大赛」「叶圣陶杯」）：不是叙述句，标题已采用
+        if re.fullmatch(r"[\u4e00-\u9fa5]{2,16}(?:大赛|杯赛|竞赛|锦标赛|邀请赛|公开赛)", l2) and not BODY_VERB_RE.search(l2):
+            continue
+        if re.fullmatch(r"[\u4e00-\u9fa5]{2,6}杯", l2):
+            continue
+        # 残缺落款行（年份被印章压住，如「组委会五年六月」）
+        if len(l2) <= 12 and re.search(r"组委会|评委会", l2) and BROKEN_DATE_RE.search(l2):
             continue
         lines.append(l2)
     # 智能拼行：正文断行直接相接；「标签：值」行之间保留空格
@@ -339,10 +550,24 @@ def guess_summary(text, limit=80):
             s += " "
         s += l2
     s = s.replace("“", "").replace("”", "").replace("「", "").replace("」", "").replace("【", "").replace("】", "")
+    s = s.replace("你的作品", "作品").replace("您的作品", "作品")
+    # 开头若粘着完整标题（含带英文括号的长标题，如四级成绩单），整段剥掉
+    for cand in {title, re.sub(r"[（(][^（）()]*[）)]", "", title or ""), title_core}:
+        cand = (cand or "").strip()
+        if cand and s.startswith(cand):
+            s = s[len(cand):].lstrip(" ，,。.")
+            break
+    # 「栗文静兹有贵校…」式：人名/印章噪声粘连在文书开头「兹有」之前
+    s = re.sub(r"^[\u4e00-\u9fa5]{2,4}(?=兹有)", "", s)
     s = re.sub(
         r"^兹聘请(?:[\u4e00-\u9fa5]{2,4}(?:同学|同志|先生|女士)|[\u4e00-\u9fa5]{2,4})", "", s
     )
-    s = re.sub(r"^(?:您在|你在|兹有|兹证明|该生|该同学)", "", s)
+    # 「兹授予张三同学…」式招呼语（学位/奖学金证书正文开头）
+    s = re.sub(r"^兹授[予于][：:\s]*(?:[\u4e00-\u9fa5]{2,4}(?:同学|同志|先生|女士)|[\u4e00-\u9fa5]{2,4})", "", s)
+    s = re.sub(r"^(?:您在|你在|兹有|兹证明|该生|该同学|贵校)", "", s)
+    s = re.sub(r"^(?:贵校|贵单位|贵司)", "", s)   # 剥掉「兹有」后可能露出的第二人称称谓
+    s = re.sub(r"^[（(][^（）()]{0,12}[）)]\s*", "", s)   # 标题剥离后开头残留的「（CET-4）」缩写
+    s = s.replace("分数数", "分数")                      # 成绩单 OCR 叠字「合格分数数：425分」
     s = re.sub(r"^担任", "", s)
     s = re.sub(r"(?<=[。！!])[ \t　]*特[颁发]此证[，,]?以资鼓励[。！!]?", "", s)   # 句中的套话尾
     # 句尾若还挂着一串机构落款（正文与落款同段时），一并去掉
@@ -361,11 +586,16 @@ def guess_summary(text, limit=80):
     return s
 
 
-def guess_date(text):
+def guess_date(text, raw=None):
     for pat in DATE_RES:
         m = pat.search(text)
-        if m and 1 <= int(m.group(2)) <= 12:
-            return f"{m.group(1)}-{int(m.group(2)):02d}"
+        if not m:
+            continue
+        # 月份可能是阿拉伯数字，也可能是中文（新规则兼容「2026年七月」）
+        mm = m.group(2)
+        month = int(mm) if mm.isdigit() else CN_MONTH.get(mm.replace("两", "二"))
+        if month and 1 <= month <= 12:
+            return f"{m.group(1)}-{month:02d}"
     # OCR 中文数字日期：如「二0二六年七月十五日」
     m = CN_DATE_RES.search(text)
     if m:
@@ -382,6 +612,20 @@ def guess_date(text):
     m = re.search(r"(20\d{2})年", text)
     if m:
         return m.group(1)
+    # 最后兜底：落款年份被印章/排版吃掉时，从原文证书编号里取年份（如编号 YSTB20251674），
+    # 再结合残句「五年六月」补出月份
+    year = ""
+    if raw:
+        m = CERT_NO_YEAR_RE.search(raw)
+        if m:
+            year = m.group(1)
+    if year:
+        m = BROKEN_DATE_RE.search(text)
+        if m:
+            month = CN_MONTH.get(m.group(2))
+            if month:
+                return f"{year}-{month:02d}"
+        return year
     return ""
 
 
@@ -420,15 +664,17 @@ def do_recognize(saved: Path, dbg):
 
     text = clean_best(masked)   # 干净文本：去 Markdown 标记/图片链接/OCR 噪声，正文藏在注释块时自动兜底
     org = guess_org(masked)
+    category = guess_category(text)
+    title = guess_title(masked)
     return {
         "ok": True,
         "file": saved.name,
-        "title": guess_title(masked),
-        "category": guess_category(text),
+        "title": title,
+        "category": category,
         "org": org,
-        "date": guess_date(text),
-        "summary": guess_summary(masked),
-        "highlights": guess_highlights(guess_category(text), org, text),
+        "date": guess_date(text, masked),   # masked 保留注释：证书编号藏在注释里时可兜底年份
+        "summary": guess_summary(masked, title=title),
+        "highlights": guess_highlights(category, org, text),
         "mask_count": len(hits),
         "mask_hits": hits,
         "raw_text": text,

@@ -126,6 +126,9 @@
 
   .cv-sub { font-size: 0.87em; color: #6E6E66; margin-top: 4px; }
   .cv-empty { color: #9CA3AF; font-size: 0.87em; padding: 4px 0; }
+  /* 空板块占位：浅色斜体引导，点击即可开始填写；输入内容后自动消失 */
+  p[data-ph]:empty::before { content: attr(data-ph); color: #B8B8AF; font-style: italic; }
+  p[data-ph]:focus::before { color: #9A9A90; }
 
   /* 间距三档：紧凑 / 标准（默认） / 宽松 */
   .sheet.sp-compact .cv-item { margin-bottom: 2px; }
@@ -198,12 +201,14 @@
     .layout { display: block; margin: 0; padding: 0; }
     .sheet { border: none; box-shadow: none; max-width: none; }
     body { background: #fff; }
+    /* 导出 PDF 时不打印空板块的引导占位（浅色「点击填写…」与「还没有内容」提示） */
+    .cv-empty { display: none !important; }
+    p[data-ph]:empty::before { content: "" !important; }
+    /* 空内容板块：连标题与空行一起隐藏，避免 PDF 上只剩一个光秃秃的板块名 */
+    .cv-sec:has(+ p[data-ph]:empty) { display: none !important; }
+    .s-title:has(+ p[data-ph]:empty) { display: none !important; }
+    p[data-ph]:empty { display: none !important; }
   }
-  /* 首次来访：示例简历提示条 */
-  .demo-note { max-width: 1300px; margin: 14px auto 0; padding: 0 20px; }
-  .demo-note-inner { background: #E7F0EB; border: 1px solid #BFD8CB; border-radius: 10px; padding: 10px 14px; font-size: 12.5px; color: #1E4D3B; display: flex; align-items: center; gap: 10px; }
-  .demo-note .tag { background: #1E4D3B; color: #fff; border-radius: 6px; padding: 2px 9px; font-size: 12px; font-weight: 700; flex: none; }
-  .demo-note .x { margin-left: auto; border: none; background: transparent; color: #1E4D3B; font-size: 16px; cursor: pointer; flex: none; padding: 0 4px; }
 </style>
 </head>
 <body>
@@ -221,14 +226,6 @@
   <a href="profile.html">个人中心</a>
   <a href="index.html">← 返回档案馆</a>
   <a data-feedback style="cursor:pointer">问题反馈</a>
-</div>
-
-<div class="demo-note" id="demo-note" style="display:none">
-  <div class="demo-note-inner">
-    <span class="tag">示例</span>
-    <span>这是虚构人物「王小明」的示例简历，方便你预览七套模板的排版效果——在左侧修改信息、勾选经历，即可替换成你自己的简历。</span>
-    <button class="x" id="demo-note-x" type="button" title="知道了">×</button>
-  </div>
 </div>
 
 <div class="layout">
@@ -328,51 +325,13 @@
 
 <script>
 // ===== 数据（与档案馆同源；编辑过卡片时自动读取本机保存的版本） =====
-const DEFAULT_CARDS = [
-  { id:"exp_001", title:"优秀志愿者", type:"荣誉证书", category:"志愿公益", org:"河北金融学院团委", date:"2025-12",
-    summary:"在2025年度青年志愿服务活动中表现突出，被评为优秀志愿者。",
-    highlights:["青年志愿服务","优秀志愿者"],
-    polished:"在2025年度校级青年志愿服务活动中表现突出，获评校级优秀志愿者，具备活动组织与沟通协调能力。",
-    brief:"2025年度校级「优秀志愿者」。",
-    star:{ s:"2025年度学校青年志愿服务活动中，各项服务需要志愿者参与现场组织与保障", t:"作为青年志愿者，负责活动中的志愿服务工作", a:"全程参与服务活动，配合团队完成人员引导、物资协调等任务", r:"因表现突出被评为校级「优秀志愿者」，锻炼了沟通与组织协调能力" } },
-  { id:"exp_002", title:"大学生数学建模竞赛 省三等奖", type:"获奖证书", category:"荣誉奖项", org:"第十六届大学生数学建模竞赛组委会", date:"",
-    summary:"在第十六届大学生数学建模竞赛中，荣获河北省赛区三等奖。",
-    highlights:["学科竞赛","数学建模","省赛三等奖"],
-    polished:"参加第十六届全国大学生数学建模竞赛，荣获河北省赛区三等奖，具备数学建模思维与数据分析能力。",
-    brief:"数学建模竞赛河北省赛区三等奖。",
-    star:{ s:"第十六届全国大学生数学建模竞赛要求参赛队在限定时间内完成建模、求解与论文撰写", t:"作为参赛队员，与队友共同完成赛题分析与论文写作", a:"分工完成问题分析、模型建立与结果验证，按时提交完整论文", r:"荣获河北省赛区三等奖，掌握数学建模方法并提升团队协作与论文写作能力" } },
-  { id:"exp_003", title:"CET-4 英语四级 546分", type:"成绩证明", category:"技能证书", org:"教育部教育考试院", date:"",
-    summary:"大学英语四级总分546：听力181、阅读201、写作和翻译164。",
-    highlights:["总分546","阅读201"],
-    polished:"通过全国大学英语四级考试（CET-4），总分546分、阅读201分，具备良好的英文读写能力。",
-    brief:"大学英语四级 546 分。",
-    star:{ s:"大学英语四级是衡量大学生英语综合应用能力的重要考试", t:"目标是顺利通过考试并考取较好分数", a:"制定备考计划，系统训练听力、阅读、写作与翻译", r:"总分546分（阅读201分），证明具备良好的英文读写能力" } },
-  { id:"exp_004", title:"优秀志愿者（崇礼168越野赛）", type:"荣誉证书", category:"志愿公益", org:"共青团张家口市崇礼区委等", date:"2026-07-15",
-    summary:"在2026崇礼168超级越野赛期间积极参加城市志愿服务，表现优异，被评为优秀志愿者。",
-    highlights:["大型赛事志愿服务","双单位联合表彰"],
-    polished:"参与2026崇礼168超级越野赛城市志愿服务，获共青团崇礼区委与区青年志愿者指导中心联合表彰，具备大型活动服务经验。",
-    brief:"崇礼168超级越野赛「优秀志愿者」（2026.07）。",
-    star:{ s:"2026崇礼168超级越野赛规模大、参赛人数多，赛事服务需求高", t:"作为城市志愿者，保障赛事各环节平稳运行", a:"积极参加赛前培训与赛事期间的城市志愿服务，坚守岗位完成各项服务任务", r:"获共青团崇礼区委与区青年志愿者指导中心联合表彰，积累了大型赛事服务经验" } },
-  { id:"exp_005", title:"叶圣陶杯新作文大赛 省二等奖", type:"获奖证书", category:"荣誉奖项", org:"中国当代文学研究会", date:"2025-06",
-    summary:"作品《润物细无声》在第22届叶圣陶杯全国中学生新作文大赛中荣获省级二等奖。",
-    highlights:["国家级文学赛事","省级二等奖"],
-    polished:"作品《润物细无声》获第22届叶圣陶杯全国中学生新作文大赛省级二等奖，具备扎实的文字表达功底。",
-    brief:"叶圣陶杯新作文大赛省级二等奖。",
-    star:{ s:"第22届叶圣陶杯全国中学生新作文大赛面向全国中学生公开征稿", t:"目标是在全国性文学赛事中完成并提交一篇高质量参赛作文", a:"独立创作参赛作品《润物细无声》，反复打磨后投稿", r:"作品荣获省级二等奖，验证了自身扎实的文字表达能力" } },
-  { id:"exp_006", title:"桑梓计划·返家乡社会实践", type:"服务证书", category:"实习实践", org:"张家口市委组织部、市人社局、团市委", date:"2026",
-    summary:"在桑梓计划大学生专题——2026年张家口市返家乡暑期社会实践中，圆满完成工作任务。",
-    highlights:["政务实践","三部门联合发证"],
-    polished:"参与张家口市返家乡暑期政务实践并圆满完成工作任务，获市委组织部、市人社局、团市委联合颁证，熟悉基层政务流程。",
-    brief:"张家口市返家乡政务实践（2026）。",
-    star:{ s:"张家口市面向返乡大学生开展「桑梓计划」政务实践", t:"作为实践成员，进入基层政务岗位参与实际工作", a:"全程参与政务实践，按计划完成各项工作任务并做好沟通协调", r:"圆满完成实践任务，获市委组织部、市人社局、团市委联合颁证，熟悉了基层政务流程" } }
-];
 
 // ===== 个人资料：基础身份信息与「个人中心」共享（key: shiguang_profile_v1） =====
 const ID_STORE_KEY = "shiguang_profile_v1";
 const DEFAULT_ID = {
-  name: "王小明", school: "河北金融学院", major: "人工智能",
-  enroll: "2024-09", valid_until: "2028-06",
-  phone: "138****5678", email: "wangxm@example.com",
+  name: "", school: "", major: "",
+  enroll: "", valid_until: "",
+  phone: "", email: "",
   address: "", intent: "", gpa: "", courses: "", self: "",
   customs: [
     { label: "籍贯", value: "" },
@@ -381,8 +340,8 @@ const DEFAULT_ID = {
 };
 const RESUME_STORE_KEY = "shiguang_resume_v1";
 const DEFAULT_EXTRA = {
-  intro: "在这里写一段自我介绍：你是谁、学什么、擅长什么、想找什么方向的机会，两三句话让面试官快速记住你。左侧可直接修改，也可以点「AI 润色」一键优化。",
-  skills: "在这里填写技能与特长，例如：办公软件、编程语言、设计工具、语言能力、组织协调、社团经历等。",
+  intro: "",   // 首次来访=空白简历；在简历纸上点击对应板块即可直接填写
+  skills: "",
   items: {}, edus: [],
   secVis: { edu: true, intro: true, skills: true, self: true }
 };
@@ -401,7 +360,10 @@ try {
 } catch (e) {}
 let profile = {
   name: idp.name, school: idp.school, major: idp.major,
-  degree: "本科在读（" + idp.enroll + " – " + idp.valid_until + "）",
+  // 入学/有效期都为空时不显示残缺的「本科在读（ – ）」，只在至少有一个时间时拼接
+  degree: (idp.enroll || idp.valid_until)
+    ? "本科在读（" + (idp.enroll || "…") + " – " + (idp.valid_until || "…") + "）"
+    : "",
   phone: idp.phone, email: idp.email,
   address: idp.address || "", intent: idp.intent || "",
   gpa: idp.gpa || "", courses: idp.courses || "", self: idp.self || "",
@@ -426,15 +388,6 @@ let tpl = "tpl-classic";
 let fontPx = 15;          // 简历整体字号（10–24px）
 let sp = "sp-normal";     // 间距档：紧凑/标准/宽松
 let photo = "";           // 证件照 dataURL（本机保存）
-
-// 首次来访演示态：个人中心与简历都还没保存过任何数据时，展示「王小明示例简历」提示
-const isResumeDemo = !localStorage.getItem(ID_STORE_KEY) && !localStorage.getItem(RESUME_STORE_KEY);
-function hideDemoNote() { const n = document.getElementById("demo-note"); if (n) n.style.display = "none"; }
-document.addEventListener("DOMContentLoaded", () => {
-  const note = document.getElementById("demo-note");
-  if (note && isResumeDemo) note.style.display = "block";
-  document.getElementById("demo-note-x").addEventListener("click", hideDemoNote);
-});
 const PHOTO_KEY = "shiguang_photo_v1";
 try { photo = localStorage.getItem(PHOTO_KEY) || ""; } catch (e) {}
 // 自定义模板（上传模板截图识别生成）
@@ -495,10 +448,10 @@ const STORE_KEY = "shiguang_cards_v1";
 let cards = [];
 try {
   const saved = localStorage.getItem(STORE_KEY);
-  cards = saved && JSON.parse(saved).length ? JSON.parse(saved) : DEFAULT_CARDS;
-} catch (e) { cards = DEFAULT_CARDS; }
-// 合并默认润色文案（用户新增的卡片没有预生成文案）
-cards = cards.map(c => ({ polished: c.summary, ...(DEFAULT_CARDS.find(d => d.id === c.id) || {}), ...c }));
+  cards = saved !== null ? (JSON.parse(saved) || []) : [];   // 首次来访=空列表，经历全部来自用户自己上传
+} catch (e) { cards = []; }
+// 用户新增的卡片没有预生成润色文案，统一以摘要兜底（已有的润色/摘要保留）
+cards = cards.map(c => ({ polished: c.summary, ...c }));
 
 let selected = new Set(cards.map(c => c.id));
 
@@ -573,7 +526,11 @@ function renderSheet() {
   // 教育背景（支持多段学历：第一段来自个人中心，其余为简历工作台自加；标题可点击改名/改色）
   const eduBlock = () => {
     const first = profile.school || profile.major;
-    if (!secVis.edu || (!first && !profile.edus.length)) return "";
+    if (!secVis.edu) return "";
+    // 教育经历完全为空：给一行浅色引导（数据在个人中心，也可直接上传学生证自动识别）
+    if (!first && !profile.edus.length) {
+      return `<div class="cv-empty">教育经历还没有内容：到「个人中心」填写学校与专业，或上传学生证自动识别。</div>`;
+    }
     const firstHtml = first ? `
       <div class="cv-item">
         <div class="t">${ce("school", profile.school)} · ${ce("major", profile.major)}</div>
@@ -603,12 +560,14 @@ function renderSheet() {
 
   // 补充板块（简介/技能/自我评价：手动开关 + 空内容自动隐藏 + 标题可改名/改色 + 内容逐行可编辑）
   const textBlock = (key, label) => {
+    if (!secVis[key]) return "";
     const val = profile[key];
-    if (!secVis[key] || !val) return "";
     const lines = linesOfText(val).filter(l => l && String(l).trim());
-    if (!lines.length) return "";
-    const ps = lines.map((l, i) =>
-      `<p contenteditable="true" data-field="${key}" data-line="${i}">${esc(l)}</p>`).join("");
+    // 内容为空：仍显示板块，用浅色占位引导「点击填写」（纯 CSS ::before，输入内容后自动消失，不会存进数据）
+    const ps = lines.length
+      ? lines.map((l, i) =>
+          `<p contenteditable="true" data-field="${key}" data-line="${i}">${esc(l)}</p>`).join("")
+      : `<p contenteditable="true" data-field="${key}" data-line="0" data-ph="点击填写${esc(label)}"></p>`;
     return `
     <div class="cv-sec" contenteditable="true" data-seckey="${key}">${esc(secLabel(key, label))}</div>
     ${ps}`;
@@ -650,8 +609,8 @@ function renderSheet() {
           <div class="s-title">联系方式</div>
           ${profile.phone ? `<div>${ce("phone", profile.phone)}</div>` : ""}
           ${profile.email ? `<div>${ce("email", profile.email)}</div>` : ""}
-          ${secVis.intro && profile.intro ? `<div class="s-title">个人简介</div><p contenteditable="true" data-field="intro" data-line="0">${esc(flattenText(profile.intro))}</p>` : ""}
-          ${secVis.skills && profile.skills ? `<div class="s-title">技能清单</div><p contenteditable="true" data-field="skills" data-line="0">${esc(flattenText(profile.skills))}</p>` : ""}
+          ${secVis.intro ? `<div class="s-title">个人简介</div>${profile.intro ? `<p contenteditable="true" data-field="intro" data-line="0">${esc(flattenText(profile.intro))}</p>` : `<p contenteditable="true" data-field="intro" data-line="0" data-ph="点击填写个人简介"></p>`}` : ""}
+          ${secVis.skills ? `<div class="s-title">技能清单</div>${profile.skills ? `<p contenteditable="true" data-field="skills" data-line="0">${esc(flattenText(profile.skills))}</p>` : `<p contenteditable="true" data-field="skills" data-line="0" data-ph="点击填写技能清单"></p>`}` : ""}
         </div>
         <div class="cv-main">${eduBlock()}${body}${selfBlock()}</div>
       </div>`;
@@ -940,7 +899,6 @@ let activeLineKey = null;
 let activeLineEl = null;
 function persistExtra() {
   try { localStorage.setItem(RESUME_STORE_KEY, JSON.stringify({ ...profile, secVis, lineFonts, lineColors, secLabels })); } catch (err) {}
-  hideDemoNote();   // 用户已开始编辑自己的简历，示例提示退场
   // 多段学历与个人中心双向同步：写回 shiguang_profile_v1，个人中心增删后简历立即可见
   try {
     const s = localStorage.getItem(ID_STORE_KEY);
