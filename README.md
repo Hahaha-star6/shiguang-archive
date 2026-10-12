@@ -6,6 +6,11 @@
 
 基于 [TextIn xParse](https://www.textin.com) 的本地网页应用 · 纯 Python 标准库 + 原生 HTML/JS · **数据全程只在你自己电脑上**
 
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-3DA639)
+![零后端](https://img.shields.io/badge/%E9%9B%B6%E5%90%8E%E7%AB%AF%C2%B7%E6%95%B0%E6%8D%AE%E4%B8%8D%E5%87%BA%E6%9C%AC%E6%9C%BA-7D3C98)
+![平台](https://img.shields.io/badge/Windows-0078D4?logo=windows&logoColor=white)
+
 `Python` `xParse OCR` `零后端` `隐私脱敏` `简历生成` `CSDN × TextIn 文档觉醒大赛作品`
 
 </div>
@@ -50,6 +55,8 @@
 <!-- 演示视频发布后在此加一行：演示视频：[视频号 / B站](链接) -->
 
 ## 三步跑起来（Windows，全程不用写代码）
+
+> 💡 Python 侧**只用标准库，无需 pip install 任何东西**；唯一要装的外部工具是第 2 步的 xParse CLI。
 
 ### 第 1 步：装 Python
 
@@ -134,7 +141,7 @@ Node.js 未安装或装完没重开 cmd，重装后重新执行 npm 命令。
 
 ## 技术栈
 
-Python 标准库（http.server / subprocess / hashlib / re）· 原生 HTML/CSS/JavaScript（零构建）· TextIn xParse CLI · Canvas 图片压缩 · localStorage
+Python 标准库（http.server / subprocess / hashlib / re，**零第三方依赖、无需 pip install**）· 原生 HTML/CSS/JavaScript（零构建）· TextIn xParse CLI · Canvas 图片压缩 · localStorage
 
 ## 免责声明
 
