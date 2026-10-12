@@ -188,6 +188,29 @@
   .tpl-custom .cv-item p { font-size: 0.87em; margin-top: 3px; color: #374151; }
   .tpl-custom .cv-item p::before { content: "•  "; color: var(--cus-accent); }
 
+  /* ===== 自定义模板：识别出的版式 ===== */
+  /* 顶部色带：头部整块填主色、文字转白 */
+  .tpl-custom.cus-band-top .cv-head { background: var(--cus-accent); border: none; border-radius: 10px; padding: 20px 22px; margin-bottom: 16px; }
+  .tpl-custom.cus-band-top .cv-name { color: #fff; }
+  .tpl-custom.cus-band-top .cv-sub { color: rgba(255,255,255,.9); }
+  .tpl-custom.cus-band-top .photo-box { border-color: rgba(255,255,255,.7); }
+  /* 侧边色栏：左/右一条贯通主色竖带（用 sheet 伪元素，不重排内容） */
+  .tpl-custom { position: relative; overflow: hidden; }
+  .tpl-custom.cus-band-left::before, .tpl-custom.cus-band-right::before {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 8px; background: var(--cus-accent);
+  }
+  .tpl-custom.cus-band-left::before { left: 0; }
+  .tpl-custom.cus-band-right::before { right: 0; }
+  .tpl-custom.cus-band-left { padding-left: 22px; }
+  .tpl-custom.cus-band-right { padding-right: 22px; }
+  /* 双栏：正文 CSS 多列，经历条目不断列；头部仍满宽 */
+  .tpl-custom.cus-two .sheet-body { column-count: 2; column-gap: 26px; column-rule: 1px solid #E5E7EB; }
+  .tpl-custom.cus-two .sheet-body .cv-item,
+  .tpl-custom.cus-two .sheet-body .cv-sec,
+  .tpl-custom.cus-two .sheet-body .cv-g,
+  .tpl-custom.cus-two .sheet-body p { break-inside: avoid; page-break-inside: avoid; }
+  .tpl-custom.cus-two .sheet-body .cv-sec { margin-top: 8px; }
+
   /* 上传弹窗与色板 */
   .overlay { display: none; position: fixed; inset: 0; background: rgba(20,20,20,.45); z-index: 80; align-items: center; justify-content: center; padding: 20px; }
   .overlay.show { display: flex; }
@@ -618,6 +641,10 @@ function renderSheet() {
     sheet.innerHTML = headBasic("cv-vivid-head") + eduBlock() + body + introBlock() + skillsBlock() + selfBlock();
   } else if (tpl === "tpl-pro" || tpl === "tpl-bold") {
     sheet.innerHTML = headBasic("") + eduBlock() + body + introBlock() + skillsBlock() + selfBlock();
+  } else if (tpl === "tpl-custom") {
+    // 自定义模板：正文包一层 .sheet-body，识别为双栏时用 CSS 多列自动排版
+    sheet.innerHTML = headBasic("") +
+      `<div class="sheet-body">${eduBlock()}${body}${introBlock()}${skillsBlock()}${selfBlock()}</div>`;
   } else {
     sheet.innerHTML = headBasic("") + eduBlock() + body + introBlock() + skillsBlock() + selfBlock();
   }
@@ -645,6 +672,9 @@ function updateAll() {
     sheet.style.setProperty("--cus-accent", customStyle.accent);
     sheet.style.setProperty("--cus-sub", customStyle.sub);
     sheet.style.setProperty("--cus-soft", customStyle.accent + "1F");
+    // 识别出的版式：顶部色带 / 左·右侧色栏 / 双栏
+    if (customStyle.band && customStyle.band !== "none") sheet.classList.add("cus-band-" + customStyle.band);
+    if (customStyle.columns === 2) sheet.classList.add("cus-two");
   }
   document.getElementById("font-ind").textContent = fontPx + "px";
   document.getElementById("font-range").value = fontPx;
@@ -759,6 +789,67 @@ function extractPalette(img) {
   return { accent: hex(accent), sub: hex(sub) };
 }
 
+// ===== 版式识别：在缩略图上做像素几何分析（不依赖视觉大模型） =====
+// 判定：顶部色带 / 侧边色栏、单栏 vs 双栏
+function analyzeLayout(img) {
+  const W = 300;
+  const k = W / img.naturalWidth;
+  const H = Math.max(1, Math.round(img.naturalHeight * k));
+  const c = document.createElement("canvas");
+  c.width = W; c.height = H;
+  const ctx = c.getContext("2d");
+  ctx.drawImage(img, 0, 0, W, H);
+  let data;
+  try { data = ctx.getImageData(0, 0, W, H).data; } catch (e) { return { band: "none", columns: 1 }; }
+  const px = (x, y) => {
+    const i = (y * W + x) * 4;
+    return { r: data[i], g: data[i + 1], b: data[i + 2] };
+  };
+  // 墨水（深色文字/线条）；填充（非白：深色或彩色，用于色带判定）
+  const isInk = p => (0.299 * p.r + 0.587 * p.g + 0.114 * p.b) < 110;
+  const isFill = p => {
+    const L = 0.299 * p.r + 0.587 * p.g + 0.114 * p.b;
+    const sat = Math.max(p.r, p.g, p.b) - Math.min(p.r, p.g, p.b);
+    return L < 215 || sat > 28;
+  };
+  const ratio = (x0, x1, y0, y1, fn) => {
+    let hit = 0, tot = 0;
+    for (let y = y0; y < y1; y += 2) for (let x = x0; x < x1; x += 2) { tot++; if (fn(px(x, y))) hit++; }
+    return tot ? hit / tot : 0;
+  };
+
+  // ① 顶部色带：页面最上方 12% 区域大面积非白
+  let band = "none";
+  const topH = Math.max(10, Math.round(H * 0.12));
+  if (ratio(0, W, 0, topH, isFill) > 0.4) band = "top";
+  // ② 侧边栏：左/右 13% 宽区域纵向 60% 以上有底色
+  const sideW = Math.round(W * 0.13);
+  const y0 = Math.round(H * 0.05), y1 = Math.round(H * 0.95);
+  if (band === "none" && ratio(0, sideW, y0, y1, isFill) > 0.32) band = "left";
+  else if (band === "none" && ratio(W - sideW, W, y0, y1, isFill) > 0.32) band = "right";
+
+  // ③ 单栏 / 双栏：正文区（15%~95% 高度）按列统计墨水密度，
+  //    若中部存在一条贯穿的低密度竖沟、且左右两侧都有内容 → 双栏
+  const cy0 = Math.round(H * 0.15), cy1 = Math.round(H * 0.95);
+  const colDensity = new Array(W).fill(0);
+  for (let x = 0; x < W; x++) {
+    let n = 0;
+    for (let y = cy0; y < cy1; y += 2) if (isInk(px(x, y))) n++;
+    colDensity[x] = n;
+  }
+  const avg = (a, b) => { let s = 0; for (let x = a; x < b; x++) s += colDensity[x]; return (b - a) ? s / (b - a) : 0; };
+  const gap = Math.max(6, Math.round(W * 0.025));
+  let columns = 1;
+  for (let gx = Math.round(W * 0.32); gx <= Math.round(W * 0.68); gx++) {
+    if (avg(gx, gx + gap) < Math.max(1.2, avg(0, W) * 0.35)
+        && avg(Math.round(W * 0.08), gx - gap) > 2.2
+        && avg(gx + gap, Math.round(W * 0.92)) > 2.2) {
+      columns = 2; break;
+    }
+  }
+  return { band, columns };
+}
+
 async function analyzeTpl(file) {
   const resBox = document.getElementById("tpl-result");
   const kwEl = document.getElementById("tpl-keywords");
@@ -768,15 +859,18 @@ async function analyzeTpl(file) {
   kwEl.textContent = "正在识别…（xParse 解析 + 配色提取）";
   useBtn.textContent = "✓ 使用此模板";
   try {
-    // ① 本地提取配色
+    // ① 本地提取配色 + 版式
     const url = URL.createObjectURL(file);
     const img = new Image();
     await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
     const colors = extractPalette(img);
+    const layout = analyzeLayout(img);
     URL.revokeObjectURL(url);
-    pendingTplStyle = { accent: colors.accent, sub: colors.sub, name: file.name };
+    pendingTplStyle = { accent: colors.accent, sub: colors.sub, band: layout.band, columns: layout.columns, name: file.name };
+    const bandName = { top: "顶部色带", left: "左侧色栏", right: "右侧色栏", none: "无色带" }[layout.band];
     document.getElementById("tpl-swatches").innerHTML =
-      `<div class="swatch-row"><span class="swatch" style="background:${colors.accent}"></span><span>主色 ${colors.accent}</span><span class="swatch" style="background:${colors.sub}"></span><span>点缀色 ${colors.sub}</span></div>`;
+      `<div class="swatch-row"><span class="swatch" style="background:${colors.accent}"></span><span>主色 ${colors.accent}</span><span class="swatch" style="background:${colors.sub}"></span><span>点缀色 ${colors.sub}</span></div>` +
+      `<div class="swatch-row" style="margin-top:6px">版式识别：${bandName} · ${layout.columns} 栏布局</div>`;
     // ② xParse 识别模板内容
     let kws = [];
     try {
