@@ -305,7 +305,7 @@
 
     <div class="panel">
       <button class="btn-danger" id="btn-reset">↺ 重置简历（恢复默认）</button>
-      <p class="hint" style="margin-top:10px">只重置简历工作台的修改（模板、字号、间距、文字改动、行级样式、教育经历与勾选），回到初始示例；档案馆卡片、个人中心资料与证件照不受影响。</p>
+      <p class="hint" style="margin-top:10px">只重置简历工作台的内容修改（字号、间距、文字改动、行级样式、教育经历与勾选）并回到经典黑金模板；已识别的自定义模板、档案馆卡片、个人中心资料与证件照不受影响。</p>
     </div>
 
     <div class="panel">
@@ -793,8 +793,11 @@ function extractPalette(img) {
 // 判定：顶部色带 / 侧边色栏、单栏 vs 双栏
 function analyzeLayout(img) {
   const W = 300;
-  const k = W / img.naturalWidth;
-  const H = Math.max(1, Math.round(img.naturalHeight * k));
+  const nw = img.naturalWidth || img.width || 0;
+  const nh = img.naturalHeight || img.height || 0;
+  if (!nw || !nh) return { band: "none", columns: 1 };
+  const k = W / nw;
+  const H = Math.max(1, Math.round(nh * k));
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
   const ctx = c.getContext("2d");
@@ -974,7 +977,7 @@ document.getElementById("edu-list").addEventListener("click", e => {
 
 // 恢复默认（只重置「简历工作台」的所有修改；档案馆卡片、个人中心资料、证件照不受影响）
 document.getElementById("btn-reset").addEventListener("click", () => {
-  if (!confirm("确定重置简历吗？\n将清空「简历工作台」的全部修改：模板、字号、间距、勾选的经历、文字改动、行级样式与多段学历，恢复初始示例。\n\n不会影响：档案馆的卡片、个人中心除学历段外的资料、证件照。")) return;
+  if (!confirm("确定重置简历吗？\n将清空简历工作台的字号、间距、勾选经历、文字改动、行级样式与多段学历，并回到经典黑金模板。\n\n不会影响：已识别的自定义模板（可再选用）、档案馆卡片、个人中心资料、证件照。")) return;
   try {
     localStorage.removeItem(RESUME_STORE_KEY);
     // 多段学历已与个人中心同步，重置时一并清空（其余个人中心资料不动）
