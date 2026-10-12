@@ -211,6 +211,58 @@
   .tpl-custom.cus-two .sheet-body p { break-inside: avoid; page-break-inside: avoid; }
   .tpl-custom.cus-two .sheet-body .cv-sec { margin-top: 8px; }
 
+  /* ===== 自定义·宽侧栏版式（参考左/右侧栏简历：照片+姓名+基本信息+联系方式进侧栏） ===== */
+  /* 英文副题与圆徽默认不显示，只有侧栏版式才出现，不影响其余七套模板 */
+  .cv-sec-en { display: none; }
+  .tpl-custom.cus-split { padding: 0; }
+  .cv-split { --sidew: 30%; display: flex; position: relative; min-height: 912px; }
+  .cv-split.split-right { flex-direction: row-reverse; }
+  /* 页首一条贯通主色细条，呼应模板原图 */
+  .cv-split::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px; background: var(--cus-accent); z-index: 2; }
+  .cv-split > .cv-aside {
+    flex: none; width: var(--sidew); background: var(--cus-soft);
+    padding: 24px 16px 22px; position: relative; z-index: 1;
+  }
+  .cv-split > .cv-main { flex: 1; min-width: 0; padding: 24px 28px 28px; }
+  .cv-aside .photo-box { width: 108px; height: 144px; margin: 0 auto 12px; border-color: var(--cus-accent); }
+  .aside-name { text-align: center; font-size: 1.5em; font-weight: 800; letter-spacing: 2px; color: #2B3440; line-height: 1.25; }
+  .aside-intent { text-align: center; font-size: 0.76em; color: #6E7682; margin: 4px 0 12px; line-height: 1.5; }
+  .aside-sec {
+    background: var(--cus-accent); color: #fff; font-size: 0.82em; font-weight: 700;
+    border-radius: 6px; padding: 6px 10px 6px 9px; margin: 14px 0 8px;
+    display: flex; align-items: center; gap: 8px; letter-spacing: 1px;
+  }
+  .aside-sec::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #fff; flex: none; }
+  .aside-list { list-style: none; font-size: 0.78em; }
+  .aside-list li { display: flex; gap: 6px; margin: 7px 0; align-items: baseline; line-height: 1.45; }
+  .aside-list b { color: #1F2937; font-weight: 700; flex: none; letter-spacing: 1px; }
+  .aside-list span { color: #3B3B36; word-break: break-word; min-width: 0; }
+  /* 主栏板块标题：圆徽 + 主色胶囊中文标题 + 灰色英文 + 细横线 */
+  .tpl-custom.cus-split .cv-sec {
+    display: flex; align-items: center; gap: 10px;
+    background: none; border: none; border-radius: 0;
+    border-bottom: 1px solid var(--cus-accent);   /* 不支持 color-mix 的旧浏览器兜底 */
+    border-bottom: 1px solid color-mix(in srgb, var(--cus-accent) 35%, #fff);
+    padding: 0 0 6px; margin: 18px 0 10px; line-height: 1.5;
+  }
+  .tpl-custom.cus-split .cv-sec::before {
+    content: attr(data-glyph); flex: none; width: 24px; height: 24px; line-height: 24px; text-align: center;
+    border-radius: 50%; background: var(--cus-accent); color: #fff; font-size: 0.66em; font-weight: 700;
+  }
+  .tpl-custom.cus-split .cv-sec .cv-sec-zh {
+    background: var(--cus-accent); color: #fff; font-weight: 700; font-size: 0.88em;
+    border-radius: 999px; padding: 3px 14px; letter-spacing: 1px;
+  }
+  .tpl-custom.cus-split .cv-sec .cv-sec-en { display: inline-block; color: #9AA5B5; font-size: 0.82em; font-weight: 400; letter-spacing: 1px; }
+  /* 蓝底胶囊上的编辑高亮改为白色描边，避免黄底白字看不清 */
+  .tpl-custom.cus-split .cv-sec [contenteditable="true"]:hover { background: transparent; outline: 1.5px dashed rgba(255,255,255,.75); }
+  .tpl-custom.cus-split .cv-sec [contenteditable="true"]:focus { background: transparent; outline: 1.5px solid #fff; color: #fff; }
+  /* 侧栏内紧凑间距档 */
+  .sheet.sp-compact .cv-split { min-height: 0; }
+  .sheet.sp-compact .cv-aside { padding-top: 18px; }
+  .sheet.sp-compact .aside-list li { margin: 3px 0; }
+  .sheet.sp-loose .aside-list li { margin: 11px 0; }
+
   /* 上传弹窗与色板 */
   .overlay { display: none; position: fixed; inset: 0; background: rgba(20,20,20,.45); z-index: 80; align-items: center; justify-content: center; padding: 20px; }
   .overlay.show { display: flex; }
@@ -224,6 +276,12 @@
     .layout { display: block; margin: 0; padding: 0; }
     .sheet { border: none; box-shadow: none; max-width: none; }
     body { background: #fff; }
+    /* 打印/PDF 必须保留所有底色与色带（浏览器默认会抹掉背景色，导致屏幕和打印不一样） */
+    .sheet, .sheet * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    /* 没有证件照时，虚线上传占位框不进 PDF（有照片时正常打印） */
+    .photo-box.photo-empty { display: none !important; }
+    /* 编辑态高亮不进打印 */
+    .sheet [contenteditable="true"]:hover, .sheet [contenteditable="true"]:focus { background: transparent !important; outline: none !important; }
     /* 导出 PDF 时不打印空板块的引导占位（浅色「点击填写…」与「还没有内容」提示） */
     .cv-empty { display: none !important; }
     p[data-ph]:empty::before { content: "" !important; }
@@ -231,6 +289,8 @@
     .cv-sec:has(+ p[data-ph]:empty) { display: none !important; }
     .s-title:has(+ p[data-ph]:empty) { display: none !important; }
     p[data-ph]:empty { display: none !important; }
+    /* 侧栏版式里空的「求职意向」占位行不打印 */
+    .aside-intent p[data-ph]:empty { display: none !important; }
   }
 </style>
 </head>
@@ -338,6 +398,7 @@
     <div id="tpl-result" style="display:none;margin-top:14px">
       <div id="tpl-swatches"></div>
       <div class="hint" id="tpl-keywords" style="margin-top:10px"></div>
+      <button class="btn-danger" id="btn-clear-tpl" style="display:none;width:100%;margin-top:12px">🗑 删除此自定义模板（回到内置模板）</button>
     </div>
     <div class="ctrl-row" style="margin-top:16px">
       <button class="btn btn-primary" id="btn-use-tpl" style="display:none">✓ 使用此模板</button>
@@ -466,6 +527,27 @@ const SECTIONS = [
   { key:"技能证书", label:"技能证书" },
   { key:"组织经历", label:"组织经历" }
 ];
+// 侧栏版式的主栏标题圆徽字 + 英文副题（贴近上传参考模板的样式语言）
+const SEC_META = {
+  "edu":        ["学", "Education"],
+  "实习实践":   ["实", "Experience"],
+  "项目经历":   ["项", "Project"],
+  "荣誉奖项":   ["奖", "Honors"],
+  "志愿公益":   ["益", "Volunteer"],
+  "技能证书":   ["证", "Skill"],
+  "组织经历":   ["务", "Organization"],
+  "intro":      ["介", "Profile"],
+  "skills":     ["技", "Skills"],
+  "self":       ["评", "Evaluate"]
+};
+// 板块大标题：圆徽 attr + 可编辑中文胶囊 + 英文副题（只有中文胶囊可编辑，英文不进用户自定义标题）
+function secHeadHtml(key, label) {
+  const m = SEC_META[key];
+  return `<div class="cv-sec"${m ? ` data-glyph="${m[0]}"` : ""}>` +
+    `<span class="cv-sec-zh" contenteditable="true" data-seckey="${esc(key)}">${esc(secLabel(key, label))}</span>` +
+    (m ? `<span class="cv-sec-en" contenteditable="false">${m[1]}</span>` : "") +
+    `</div>`;
+}
 
 const STORE_KEY = "shiguang_cards_v1";
 let cards = [];
@@ -539,12 +621,46 @@ function renderSheet() {
   // 带证件照的头部（七套模板通用：所有模板右上角都有证件照）
   const photoBoxHtml = () => photo
     ? `<div class="photo-box" id="photo-box" title="点击更换证件照"><img src="${photo}" alt="证件照"><span class="x" title="移除照片">×</span></div>`
-    : `<div class="photo-box" id="photo-box" title="点击上传证件照">＋<span>证件照</span></div>`;
+    : `<div class="photo-box photo-empty" id="photo-box" title="点击上传证件照">＋<span>证件照</span></div>`;
   const headBasic = extraCls => `
     <div class="cv-head ${extraCls} has-photo">
       <div class="head-main">${headInner}</div>
       ${photoBoxHtml()}
     </div>`;
+
+  // 侧栏式自定义模板（识别为左/右宽侧栏）：照片+姓名+求职意向+基本信息+联系方式进侧栏，
+  // 教育/经历/简介/技能/评价进主栏，主栏标题带圆徽胶囊+英文副题
+  const renderCustomSplit = side => {
+    const li = (label, field, val) => val
+      ? `<li><b>${label}</b><span contenteditable="true" data-field="${field}">${esc(val)}</span></li>` : "";
+    const basicRows = [
+      li("学　校", "school", profile.school),
+      li("专　业", "major", profile.major),
+      profile.degree ? `<li><b>学　历</b><span contenteditable="true" data-field="degree">${esc(profile.degree)}</span></li>` : "",
+      ...(profile.customs || []).map((cm, i) => cm.label && cm.value
+        ? `<li><b>${esc(cm.label)}</b><span contenteditable="true" data-custom="${i}">${esc(cm.value)}</span></li>` : "")
+    ];
+    const contactRows = [
+      li("电　话", "phone", profile.phone),
+      li("邮　箱", "email", profile.email),
+      li("住　址", "address", profile.address)
+    ];
+    // 整块没内容时连蓝条小标题也不渲染（保持陌生人首访空白）
+    const asideBlock = (title, rows) => rows.join("").trim()
+      ? `<div class="aside-sec">${title}</div><ul class="aside-list">${rows.join("")}</ul>` : "";
+    const aside = `
+      <aside class="cv-aside">
+        <div class="aside-photo">${photoBoxHtml()}</div>
+        <div class="aside-name" contenteditable="true" data-field="name">${esc(profile.name || "未填姓名")}</div>
+        <div class="aside-intent">${profile.intent
+          ? `求职意向：<span contenteditable="true" data-field="intent">${esc(profile.intent)}</span>`
+          : `<p contenteditable="true" data-field="intent" data-ph="点击填写求职意向"></p>`}</div>
+        ${asideBlock("基本信息", basicRows)}
+        ${asideBlock("联系方式", contactRows)}
+      </aside>`;
+    const main = `<main class="cv-main">${eduBlock()}${body}${introBlock()}${skillsBlock()}${selfBlock()}</main>`;
+    return `<div class="cv-split${side === "right" ? " split-right" : ""}">${aside}${main}</div>`;
+  };
 
   // 教育背景（支持多段学历：第一段来自个人中心，其余为简历工作台自加；标题可点击改名/改色）
   const eduBlock = () => {
@@ -577,7 +693,7 @@ function renderSheet() {
       </div>`;
     }).join("");
     return `
-    <div class="cv-sec" contenteditable="true" data-seckey="edu">${esc(secLabel("edu", "教育背景"))}</div>
+    ${secHeadHtml("edu", "教育背景")}
     ${firstHtml}${extraHtml}`;
   };
 
@@ -592,7 +708,7 @@ function renderSheet() {
           `<p contenteditable="true" data-field="${key}" data-line="${i}">${esc(l)}</p>`).join("")
       : `<p contenteditable="true" data-field="${key}" data-line="0" data-ph="点击填写${esc(label)}"></p>`;
     return `
-    <div class="cv-sec" contenteditable="true" data-seckey="${key}">${esc(secLabel(key, label))}</div>
+    ${secHeadHtml(key, label)}
     ${ps}`;
   };
   const introBlock = () => textBlock("intro", "个人简介");
@@ -620,7 +736,7 @@ function renderSheet() {
       </div>`;
     }).join("");
     if (!items.trim()) return;               // 该板块全部被删空 → 连标题也不显示
-    body += `<div class="cv-sec" contenteditable="true" data-seckey="${esc(g.s.key)}">${esc(secLabel(g.s.key, g.s.label))}</div>`;
+    body += secHeadHtml(g.s.key, g.s.label);
     body += items;
   });
   if (!body.trim()) body = `<div class="cv-empty">尚未勾选任何经历，请在左侧勾选。</div>`;
@@ -642,9 +758,15 @@ function renderSheet() {
   } else if (tpl === "tpl-pro" || tpl === "tpl-bold") {
     sheet.innerHTML = headBasic("") + eduBlock() + body + introBlock() + skillsBlock() + selfBlock();
   } else if (tpl === "tpl-custom") {
-    // 自定义模板：正文包一层 .sheet-body，识别为双栏时用 CSS 多列自动排版
-    sheet.innerHTML = headBasic("") +
-      `<div class="sheet-body">${eduBlock()}${body}${introBlock()}${skillsBlock()}${selfBlock()}</div>`;
+    // 自定义模板：识别为左/右宽侧栏 → 照片与联系方式进侧栏的真分栏渲染；
+    // 否则走单栏正文（包 .sheet-body，识别为双栏时用 CSS 多列自动排版）
+    const side = customStyle && (customStyle.band === "left" || customStyle.band === "right") ? customStyle.band : null;
+    if (side) {
+      sheet.innerHTML = renderCustomSplit(side);
+    } else {
+      sheet.innerHTML = headBasic("") +
+        `<div class="sheet-body">${eduBlock()}${body}${introBlock()}${skillsBlock()}${selfBlock()}</div>`;
+    }
   } else {
     sheet.innerHTML = headBasic("") + eduBlock() + body + introBlock() + skillsBlock() + selfBlock();
   }
@@ -672,9 +794,16 @@ function updateAll() {
     sheet.style.setProperty("--cus-accent", customStyle.accent);
     sheet.style.setProperty("--cus-sub", customStyle.sub);
     sheet.style.setProperty("--cus-soft", customStyle.accent + "1F");
-    // 识别出的版式：顶部色带 / 左·右侧色栏 / 双栏
-    if (customStyle.band && customStyle.band !== "none") sheet.classList.add("cus-band-" + customStyle.band);
-    if (customStyle.columns === 2) sheet.classList.add("cus-two");
+    // 识别出的版式：左/右宽侧栏（真分栏渲染）/ 顶部色带 / 双栏正文
+    const band = customStyle.band || "none";
+    if (band === "left" || band === "right") {
+      sheet.classList.add("cus-split");
+      const w = Math.min(38, Math.max(22, Math.round((customStyle.sideW || 0.3) * 100)));
+      sheet.style.setProperty("--sidew", w + "%");
+    } else {
+      if (band === "top") sheet.classList.add("cus-band-top");
+      if (customStyle.columns === 2) sheet.classList.add("cus-two");
+    }
   }
   document.getElementById("font-ind").textContent = fontPx + "px";
   document.getElementById("font-range").value = fontPx;
@@ -719,14 +848,15 @@ document.getElementById("btn-font-down").addEventListener("click", () => {
 function openTplOverlay() {
   const ov = document.getElementById("tpl-overlay");
   ov.classList.add("show");
-  // 已有自定义模板时，直接展示已有配色并允许替换
+  // 已有自定义模板时，直接展示已有配色并允许替换或删除
   if (customStyle) {
     document.getElementById("tpl-result").style.display = "block";
     document.getElementById("tpl-swatches").innerHTML =
       `<div class="swatch-row"><span class="swatch" style="background:${customStyle.accent}"></span><span>主色 ${customStyle.accent}</span><span class="swatch" style="background:${customStyle.sub}"></span><span>点缀色 ${customStyle.sub}</span></div>`;
-    document.getElementById("tpl-keywords").textContent = "当前专属模板（可重新上传替换）";
+    document.getElementById("tpl-keywords").textContent = "当前专属模板（可重新上传替换，也可直接删除）";
     document.getElementById("btn-use-tpl").style.display = "";
     document.getElementById("btn-use-tpl").textContent = "✓ 继续使用当前模板";
+    document.getElementById("btn-clear-tpl").style.display = "";
     pendingTplStyle = customStyle;
   } else {
     document.getElementById("tpl-result").style.display = "none";
@@ -746,10 +876,14 @@ document.getElementById("tpl-input").addEventListener("change", () => {
 function extractPalette(img) {
   const S = 48;
   const c = document.createElement("canvas");
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
   c.width = S;
-  c.height = Math.max(1, Math.round(S * img.height / Math.max(1, img.width)));
+  c.height = Math.max(1, Math.round(S * ih / Math.max(1, iw)));
   const ctx = c.getContext("2d");
-  ctx.drawImage(img, 0, 0, c.width, c.height);
+  // 裁掉上 7%/下 7%、左右各 3%：用户上传的多为截屏，边缘常有状态栏、App 水印、进度条，
+  // 这些会把主色带偏（如蓝模板被底部彩色水印干扰）
+  const sx = iw * 0.03, sy = ih * 0.07, sw = iw * 0.94, sh = ih * 0.86;
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, c.width, c.height);
   const data = ctx.getImageData(0, 0, c.width, c.height).data;
   const freq = {};
   const step = 20;
@@ -790,7 +924,7 @@ function extractPalette(img) {
 }
 
 // ===== 版式识别：在缩略图上做像素几何分析（不依赖视觉大模型） =====
-// 判定：顶部色带 / 侧边色栏、单栏 vs 双栏
+// 判定：左侧/右侧宽侧栏、顶部色带、单栏 vs 双栏
 function analyzeLayout(img) {
   const W = 300;
   const nw = img.naturalWidth || img.width || 0;
@@ -805,52 +939,113 @@ function analyzeLayout(img) {
   let data;
   try { data = ctx.getImageData(0, 0, W, H).data; } catch (e) { return { band: "none", columns: 1 }; }
   const px = (x, y) => {
-    const i = (y * W + x) * 4;
+    const i = (Math.min(H - 1, Math.max(0, y)) * W + Math.min(W - 1, Math.max(0, x))) * 4;
     return { r: data[i], g: data[i + 1], b: data[i + 2] };
   };
-  // 墨水（深色文字/线条）；填充（非白：深色或彩色，用于色带判定）
-  const isInk = p => (0.299 * p.r + 0.587 * p.g + 0.114 * p.b) < 110;
-  const isFill = p => {
-    const L = 0.299 * p.r + 0.587 * p.g + 0.114 * p.b;
-    const sat = Math.max(p.r, p.g, p.b) - Math.min(p.r, p.g, p.b);
-    return L < 215 || sat > 28;
+  const lum = p => 0.299 * p.r + 0.587 * p.g + 0.114 * p.b;
+  const dist3 = (a, b) => Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b);
+  // 矩形区域像素均值
+  const bandMean = (x0, x1, y0, y1, ystep = 4) => {
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let y = y0; y < y1; y += ystep)
+      for (let x = x0; x < x1; x += 2) {
+        const p = px(x, y); r += p.r; g += p.g; b += p.b; n++;
+      }
+    return n ? { r: r / n, g: g / n, b: b / n } : { r: 255, g: 255, b: 255 };
   };
-  const ratio = (x0, x1, y0, y1, fn) => {
-    let hit = 0, tot = 0;
-    for (let y = y0; y < y1; y += 2) for (let x = x0; x < x1; x += 2) { tot++; if (fn(px(x, y))) hit++; }
-    return tot ? hit / tot : 0;
+  const rowMean = (x0, x1, y) => {
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let x = x0; x < x1; x++) { const p = px(x, y); r += p.r; g += p.g; b += p.b; n++; }
+    return n ? { r: r / n, g: g / n, b: b / n } : { r: 255, g: 255, b: 255 };
   };
+  const farWhite = c => (255 - c.r) + (255 - c.g) + (255 - c.b);
 
-  // ① 顶部色带：页面最上方 12% 区域大面积非白
-  let band = "none";
-  const topH = Math.max(10, Math.round(H * 0.12));
-  if (ratio(0, W, 0, topH, isFill) > 0.4) band = "top";
-  // ② 侧边栏：左/右 13% 宽区域纵向 60% 以上有底色
-  const sideW = Math.round(W * 0.13);
-  const y0 = Math.round(H * 0.05), y1 = Math.round(H * 0.95);
-  if (band === "none" && ratio(0, sideW, y0, y1, isFill) > 0.32) band = "left";
-  else if (band === "none" && ratio(W - sideW, W, y0, y1, isFill) > 0.32) band = "right";
+  const y0 = Math.round(H * 0.08), y1 = Math.round(H * 0.95);
 
-  // ③ 单栏 / 双栏：正文区（15%~95% 高度）按列统计墨水密度，
-  //    若中部存在一条贯穿的低密度竖沟、且左右两侧都有内容 → 双栏
-  const cy0 = Math.round(H * 0.15), cy1 = Math.round(H * 0.95);
-  const colDensity = new Array(W).fill(0);
-  for (let x = 0; x < W; x++) {
-    let n = 0;
-    for (let y = cy0; y < cy1; y += 2) if (isInk(px(x, y))) n++;
-    colDensity[x] = n;
+  // ① 宽侧栏：比左右两条「边带」（各 14% 宽）的全高底色。
+  //    手机拍照/截屏常见浅色侧栏（#EEF2F6 这种），单行色差只有 20 左右且和文字混在一起，
+  //    但整列平均后差异稳定存在；用「整带色差 ≥30 + 70% 的行方向一致」双重确认，
+  //    白底、纯顶部色带、左右对称页面都不会误判。
+  let band = "none", sideWFrac = 0;
+  const ew = Math.max(8, Math.round(W * 0.14));
+  const Lfull = bandMean(2, ew, y0, y1);
+  const Rfull = bandMean(W - ew, W - 2, y0, y1);
+  let rows = 0, lRows = 0, rRows = 0;
+  for (let y = y0; y < y1; y += 5) {
+    const L = rowMean(2, ew, y), R = rowMean(W - ew, W - 2, y);
+    if (dist3(L, R) >= 12) {
+      if (farWhite(L) > farWhite(R) + 4) lRows++;
+      else if (farWhite(R) > farWhite(L) + 4) rRows++;
+    }
+    rows++;
   }
-  const avg = (a, b) => { let s = 0; for (let x = a; x < b; x++) s += colDensity[x]; return (b - a) ? s / (b - a) : 0; };
-  const gap = Math.max(6, Math.round(W * 0.025));
+  const lr = rows ? lRows / rows : 0, rr = rows ? rRows / rows : 0;
+  const side = dist3(Lfull, Rfull) >= 30 && lr >= 0.70 && lr > rr * 2 ? "left"
+             : dist3(Lfull, Rfull) >= 30 && rr >= 0.70 && rr > lr * 2 ? "right" : null;
+  if (side) {
+    band = side;
+    // 侧栏宽度：逐列取「最亮 60% 像素」的均值作为该列底色（文字/照片是少数暗像素，自动被排除），
+    // 从边缘向内找第一段连续 12px 更像对侧边底色的位置 → 侧栏边界
+    const colBG = x => {
+      const pts = [];
+      for (let y = y0; y < y1; y += 2) pts.push(px(x, y));
+      pts.sort((a, b) => lum(b) - lum(a));
+      const k = pts.slice(0, Math.max(1, Math.floor(pts.length * 0.6)));
+      const n = k.length;
+      return { r: k.reduce((s, p) => s + p.r, 0) / n, g: k.reduce((s, p) => s + p.g, 0) / n, b: k.reduce((s, p) => s + p.b, 0) / n };
+    };
+    const sRef = side === "left" ? colBG(4) : colBG(W - 5);
+    const oRef = side === "left" ? colBG(W - 5) : colBG(4);
+    const start = side === "left" ? Math.round(W * 0.10) : Math.round(W * 0.90);
+    const end = side === "left" ? Math.round(W * 0.46) : Math.round(W * 0.54);
+    const dir = side === "left" ? 1 : -1;
+    let run = 0, bPx = 0;
+    for (let x = start; x !== end; x += dir) {
+      const c2 = colBG(x);
+      if (dist3(c2, oRef) < dist3(c2, sRef)) run++; else run = 0;
+      if (run >= 12) { bPx = side === "left" ? x - 11 : W - (x + 11); break; }
+    }
+    if (bPx) sideWFrac = Math.min(0.38, Math.max(0.22, bPx / W));
+  }
+
+  // ② 顶部色带（仅在没识别到侧栏时）：中间 60% 宽度内，从页首连续填充深度 ≥7% 页面高度。
+  //    手机截图顶部 4% 左右的系统状态栏彩条达不到 7%，不会再被误当成顶部色带。
+  if (band === "none") {
+    const isFill = p => lum(p) < 215 || (Math.max(p.r, p.g, p.b) - Math.min(p.r, p.g, p.b)) > 28;
+    const cx0 = Math.round(W * 0.2), cx1 = Math.round(W * 0.8);
+    let depth = 0;
+    const maxD = Math.round(H * 0.2);
+    for (let y = 0; y < maxD; y++) {
+      let hit = 0, tot = 0;
+      for (let x = cx0; x < cx1; x += 2) { tot++; if (isFill(px(x, y))) hit++; }
+      if (tot && hit / tot > 0.5) depth = y + 1;
+      else if (y - depth > 3) break;
+    }
+    if (depth >= H * 0.07) band = "top";
+  }
+
+  // ③ 单栏 / 双栏（侧栏布局本身已是分栏，直接按单栏处理）
   let columns = 1;
-  for (let gx = Math.round(W * 0.32); gx <= Math.round(W * 0.68); gx++) {
-    if (avg(gx, gx + gap) < Math.max(1.2, avg(0, W) * 0.35)
-        && avg(Math.round(W * 0.08), gx - gap) > 2.2
-        && avg(gx + gap, Math.round(W * 0.92)) > 2.2) {
-      columns = 2; break;
+  if (!side) {
+    const isInk = p => lum(p) < 110;
+    const cy0 = Math.round(H * 0.15), cy1 = Math.round(H * 0.95);
+    const colDensity = new Array(W).fill(0);
+    for (let x = 0; x < W; x++) {
+      let n = 0;
+      for (let y = cy0; y < cy1; y += 2) if (isInk(px(x, y))) n++;
+      colDensity[x] = n;
+    }
+    const avg = (a, b) => { let s = 0; for (let x = a; x < b; x++) s += colDensity[x]; return (b - a) ? s / (b - a) : 0; };
+    const gap = Math.max(6, Math.round(W * 0.025));
+    for (let gx = Math.round(W * 0.32); gx <= Math.round(W * 0.68); gx++) {
+      if (avg(gx, gx + gap) < Math.max(1.2, avg(0, W) * 0.35)
+          && avg(Math.round(W * 0.08), gx - gap) > 2.2
+          && avg(gx + gap, Math.round(W * 0.92)) > 2.2) {
+        columns = 2; break;
+      }
     }
   }
-  return { band, columns };
+  return { band, columns, sideWFrac };
 }
 
 async function analyzeTpl(file) {
@@ -859,6 +1054,7 @@ async function analyzeTpl(file) {
   const useBtn = document.getElementById("btn-use-tpl");
   resBox.style.display = "block";
   useBtn.style.display = "none";
+  document.getElementById("btn-clear-tpl").style.display = "none";   // 新识别结果是「替换」，删除入口仅在查看已保存模板时出现
   kwEl.textContent = "正在识别…（xParse 解析 + 配色提取）";
   useBtn.textContent = "✓ 使用此模板";
   try {
@@ -869,11 +1065,19 @@ async function analyzeTpl(file) {
     const colors = extractPalette(img);
     const layout = analyzeLayout(img);
     URL.revokeObjectURL(url);
-    pendingTplStyle = { accent: colors.accent, sub: colors.sub, band: layout.band, columns: layout.columns, name: file.name };
-    const bandName = { top: "顶部色带", left: "左侧色栏", right: "右侧色栏", none: "无色带" }[layout.band];
+    pendingTplStyle = {
+      accent: colors.accent, sub: colors.sub,
+      band: layout.band, columns: layout.columns,
+      sideW: (layout.band === "left" || layout.band === "right") ? (layout.sideWFrac || 0.3) : 0,
+      name: file.name
+    };
+    const bandName = { top: "顶部色带", left: "左侧宽栏", right: "右侧宽栏", none: "无色块" }[layout.band];
+    const layoutText = (layout.band === "left" || layout.band === "right")
+      ? `${bandName}（约占页宽 ${Math.round((pendingTplStyle.sideW || 0.3) * 100)}%，照片与联系方式入侧栏）`
+      : `${bandName} · ${layout.columns} 栏布局`;
     document.getElementById("tpl-swatches").innerHTML =
       `<div class="swatch-row"><span class="swatch" style="background:${colors.accent}"></span><span>主色 ${colors.accent}</span><span class="swatch" style="background:${colors.sub}"></span><span>点缀色 ${colors.sub}</span></div>` +
-      `<div class="swatch-row" style="margin-top:6px">版式识别：${bandName} · ${layout.columns} 栏布局</div>`;
+      `<div class="swatch-row" style="margin-top:6px">版式识别：${layoutText}</div>`;
     // ② xParse 识别模板内容
     let kws = [];
     try {
@@ -897,6 +1101,16 @@ document.getElementById("btn-use-tpl").addEventListener("click", () => {
   try { localStorage.setItem(TPL_KEY, JSON.stringify(customStyle)); } catch (err) {}
   document.getElementById("tpl-overlay").classList.remove("show");
   tpl = "tpl-custom";
+  updateAll();
+});
+// 删除已识别的自定义模板：清掉本机存储并回到经典黑金（简历内容、证件照等全部不受影响）
+document.getElementById("btn-clear-tpl").addEventListener("click", () => {
+  if (!confirm("确定删除这个自定义模板吗？\n删除后简历将回到内置的「经典黑金」模板；之后随时可以重新上传模板截图生成。\n\n简历内容、档案馆卡片、个人资料与证件照都不会受影响。")) return;
+  try { localStorage.removeItem(TPL_KEY); } catch (err) {}
+  customStyle = null;
+  pendingTplStyle = null;
+  tpl = "tpl-classic";
+  document.getElementById("tpl-overlay").classList.remove("show");
   updateAll();
 });
 
@@ -1192,7 +1406,7 @@ document.getElementById("sheet").addEventListener("focusout", e => {
   } else if (el.dataset.id) {
     profile.items[el.dataset.id] = v;   // 允许清空经历描述
   } else if (el.dataset.seckey) {
-    // 板块大标题：改名（删空则恢复默认标题）
+    // 板块大标题：改名（删空则恢复默认标题）；英文副题在独立 span 里，不会混进自定义文字
     const k = el.dataset.seckey;
     if (v) secLabels[k] = v; else delete secLabels[k];
     persistExtra();
